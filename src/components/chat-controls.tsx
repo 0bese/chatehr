@@ -1,0 +1,51 @@
+"use client";
+import { PanelLeft, Search, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+type ChatControlsProps = {
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  // hasActiveConversation: boolean;
+  // createNewChat: () => void;
+};
+
+export function ChatControls({
+  sidebarCollapsed,
+  setSidebarCollapsed,
+}: ChatControlsProps) {
+  return (
+    <div className="absolute left-2.5 top-2.5 z-50">
+      <div className="flex items-center gap-0 bg-background/80 backdrop-blur-sm rounded-md p-1 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 text-gray-500/70 dark:text-gray-400/70 hover:text-gray-700 dark:hover:text-gray-300"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        >
+          <PanelLeft className="w-5 h-5" />
+        </Button>
+        {sidebarCollapsed && (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-gray-500/70 dark:text-gray-400/70 hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => alert("Search is not implemented yet.")}
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              // disabled={!hasActiveConversation}
+              className="h-8 w-8 p-0 text-gray-500/70 dark:text-gray-400/70 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed"
+              // onClick={createNewChat}
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
