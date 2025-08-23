@@ -4,7 +4,7 @@ import { memo, useId, useMemo, useState } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import { CodeBlock, CodeBlockCode, CodeBlockGroup } from "./code-block";
+import { CodeBlockGroup, CodeBlock, CodeBlockCode } from "./code-block";
 import { Button } from "../ui/button";
 import { Check, Copy } from "lucide-react";
 
@@ -46,21 +46,23 @@ const INITIAL_COMPONENTS: Partial<Components> = {
       );
     }
 
-    const language = extractLanguage(className);
     const [copied, setCopied] = useState(false);
     const handleCopy = () => {
       navigator.clipboard.writeText(children as string);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
+
+    const language = extractLanguage(className);
+
     return (
       <CodeBlock className={className}>
         <CodeBlockGroup className="border-border border-b py-2 pr-2 pl-4">
           <div className="flex items-center gap-2">
             <div className="bg-primary/10 text-primary rounded px-2 py-1 text-xs font-medium">
-              React
+              {language}
             </div>
-            <span className="text-muted-foreground text-sm">counter.tsx</span>
+            {/* <span className="text-muted-foreground text-sm">counter.tsx</span> */}
           </div>
           <Button
             variant="ghost"

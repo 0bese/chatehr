@@ -31,9 +31,8 @@ import {
   ChevronDown,
   Copy,
   Paperclip,
+  RefreshCcw,
   Square,
-  ThumbsDown,
-  ThumbsUp,
   X,
 } from "lucide-react";
 import { memo, useState } from "react";
@@ -54,14 +53,16 @@ import { Switch } from "./ui/switch";
 type MessageComponentProps = {
   message: UIMessage;
   isLastMessage: boolean;
+  hideToolCall: boolean;
+  regenerate: () => void;
 };
 
 const renderToolPart = (
   part: UIMessagePart<any, any>,
   index: number
 ): React.ReactNode => {
-  if (!part.type?.startsWith("tool-")) return null;
-
+  if (part.type !== "dynamic-tool" && !part.type?.startsWith("tool-"))
+    return null;
   return <Tool key={`${part.type}-${index}`} toolPart={part as ToolPart} />;
 };
 
@@ -112,7 +113,12 @@ async function convertFilesToDataURLs(
 }
 
 export const MessageComponent = memo(
-  ({ message, isLastMessage }: MessageComponentProps) => {
+  ({
+    message,
+    isLastMessage,
+    hideToolCall,
+    regenerate,
+  }: MessageComponentProps) => {
     const isAssistant = message?.role === "assistant";
     const [copied, setCopied] = useState(false);
     const handleCopy = () => {
@@ -124,6 +130,13 @@ export const MessageComponent = memo(
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
+
+    const toolCallParts = message.parts.filter(
+      (part: any) =>
+        (part.type && part.type.startsWith("tool-")) ||
+        (part.type && part.type.startsWith("dynamic-tool"))
+    );
+
     return (
       <Message
         className={cn(
@@ -133,13 +146,13 @@ export const MessageComponent = memo(
       >
         {isAssistant ? (
           <div className="group flex w-full flex-col gap-0 space-y-2">
-            <div className="w-full">
-              {message?.parts
-                .filter(
-                  (part: any) => part.type && part.type.startsWith("tool-")
-                )
-                .map((part: any, index: number) => renderToolPart(part, index))}
-            </div>
+            {!hideToolCall && toolCallParts.length > 0 && (
+              <div className="w-full">
+                {toolCallParts.map((part: any, index: number) =>
+                  renderToolPart(part, index)
+                )}
+              </div>
+            )}
             <MessageContent
               className="text-foreground prose w-full min-w-0 flex-1 rounded-lg bg-transparent p-0"
               markdown
@@ -157,12 +170,7 @@ export const MessageComponent = memo(
               )}
             >
               <MessageAction tooltip="Copy" delayDuration={100}>
-                <Button
-                  variant="ghost"
-                  onClick={handleCopy}
-                  size="icon"
-                  className="rounded-full"
-                >
+                <Button variant="ghost" onClick={handleCopy} size="icon">
                   {copied ? (
                     <Check className="h-4 w-4 text-green-500" />
                   ) : (
@@ -170,14 +178,13 @@ export const MessageComponent = memo(
                   )}
                 </Button>
               </MessageAction>
-              <MessageAction tooltip="Upvote" delayDuration={100}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <ThumbsUp />
-                </Button>
-              </MessageAction>
-              <MessageAction tooltip="Downvote" delayDuration={100}>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <ThumbsDown />
+              <MessageAction tooltip="Regenerate" delayDuration={100}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => regenerate()}
+                >
+                  <RefreshCcw />
                 </Button>
               </MessageAction>
             </MessageActions>
@@ -233,12 +240,26 @@ export const MessageComponent = memo(
                 "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
               )}
             >
+              <MessageAction tooltip="Edit" delayDuration={100}>
+                <Button
+                  variant="ghost"
+                  onClick={handleCopy}
+                  size="icon"
+                  className=""
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </MessageAction>
               <MessageAction tooltip="Copy" delayDuration={100}>
                 <Button
                   variant="ghost"
                   onClick={handleCopy}
                   size="icon"
-                  className="rounded-full"
+                  className=""
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-500" />
@@ -288,10 +309,12 @@ function ChatMain() {
     []
   );
   const [selectedModel, setSelectedModel] = useState("Gemini 2.5 Flash");
+  const [hideToolCall, setHideToolCall] = useState(false);
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, regenerate } = useChat({
     transport: new DefaultChatTransport({
-      api: "/api/chat", // Changed to match the simpler example
+      api: "/api/primitives/tool-calling", // Changed to match the simpler example
+      // api: "/api/chat", // Changed to match the simpler example
     }),
   });
 
@@ -365,12 +388,13 @@ function ChatMain() {
 
           {messages?.map((message, index) => {
             const isLastMessage = index === messages.length - 1;
-
             return (
               <MessageComponent
                 key={message.id}
                 message={message}
                 isLastMessage={isLastMessage}
+                hideToolCall={hideToolCall}
+                regenerate={() => regenerate()}
               />
             );
           })}
@@ -468,7 +492,10 @@ function ChatMain() {
                     </DropdownMenu>
                   </div>
                   <div className=" flex justify-center items-center gap-2">
-                    <Switch />{" "}
+                    <Switch
+                      checked={hideToolCall}
+                      onCheckedChange={setHideToolCall}
+                    />{" "}
                     <span className="text-gray-500/90 text-sm">
                       Hide Tool call
                     </span>
