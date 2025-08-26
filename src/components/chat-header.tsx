@@ -7,7 +7,7 @@ export function ChatHeader() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="absolute right-2.5 top-2.5 z-20 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-md p-1 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+    <div className="absolute right-2.5 top-2.5 z-20 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-sm p-1 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
       <Button
         size="sm"
         variant="ghost"

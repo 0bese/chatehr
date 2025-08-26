@@ -4,7 +4,7 @@ import {
   ChatContainerContent,
   ChatContainerRoot,
 } from "@/components/prompt-kit/chat-container";
-import { DotsLoader } from "@/components/prompt-kit/loader";
+import { DotsLoader, Loader } from "@/components/prompt-kit/loader";
 import {
   Message,
   MessageAction,
@@ -49,6 +49,9 @@ import {
 } from "./ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { Switch } from "./ui/switch";
+import { Response } from "./ai-elements/response";
+import { ResponseStream } from "./prompt-kit/response-stream";
+import { Markdown } from "./prompt-kit/markdown";
 
 type MessageComponentProps = {
   message: UIMessage;
@@ -154,7 +157,7 @@ export const MessageComponent = memo(
               </div>
             )}
             <MessageContent
-              className="text-foreground prose w-full min-w-0 flex-1 rounded-lg bg-transparent p-0"
+              className="text-foreground prose w-full min-w-0 flex-1 rounded-lg bg-transparent p-0 space-y-4"
               markdown
             >
               {message?.parts
@@ -282,7 +285,7 @@ const LoadingMessage = memo(() => (
   <Message className="mx-auto flex w-full max-w-3xl flex-col items-start gap-2 px-2 md:px-10">
     <div className="group flex w-full flex-col gap-0">
       <div className="text-foreground prose w-full min-w-0 flex-1 rounded-lg bg-transparent p-0">
-        <DotsLoader />
+        <Loader variant="dots" />
       </div>
     </div>
   </Message>
@@ -367,10 +370,90 @@ function ChatMain() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const contents = `
+  There are several ways to reverse a string in Python, ranging from very concise and "Pythonic" to more explicit iterative approaches.
+
+Here are the most common methods:
+
+---
+
+### 1. Using String Slicing (The Pythonic Way)
+
+This is by far the most common, concise, and idiomatic way to reverse a string in Python.
+
+\`\`\`python
+original_string = "hello"
+reversed_string = original_string[::-1]
+print(reversed_string) # Output: olleh
+\`\`\`
+
+**Explanation:**
+* \`[start:end:step]\` is the general syntax for slicing.
+* Omitting \`start\` and \`end\` means "from the beginning to the end of the string".
+* \`[::-1]\` means "step backwards by 1". This effectively iterates through the string from the last character to the first.
+
+---
+
+### 2. Using \`reversed()\` function and \`join()\`
+
+The \`reversed()\` function returns an iterator that yields elements in reverse order. Since \`reversed()\` returns an iterator of characters, you need to use \`"".join()\` to concatenate them back into a single string.
+
+\`\`\`python
+original_string = "python"
+reversed_string = "".join(reversed(original_string))
+print(reversed_string) # Output: nohtyp
+\`\`\`
+
+**Explanation:**
+* \`reversed(original_string)\` produces an iterator: \`('n', 'o', 'h', 't', 'y', 'p')\`.
+* \`"".join(...)\` concatenates these characters into a string, using an empty string \`""\` as the separator.
+
+---
+
+### 3. Using a \`for\` loop (Iterative Approach)
+
+This method involves iterating through the original string and building the reversed string character by character.
+
+\`\`\`python
+original_string = "world"
+reversed_string = ""
+for char in original_string:
+reversed_string = char + reversed_string # Prepend each character
+
+print(reversed_string) # Output: dlrow
+\`\`\`
+
+**Explanation:**
+* We start with an empty \`reversed_string\`.
+* In each iteration, we take a character (\`char\`) from \`original_string\`.
+* We then add \`char\` to the *beginning* of \`reversed_string\`. This ensures that characters are added in reverse order.
+
+---
+
+### 4. Converting to a list, reversing, and joining back
+
+Since strings are immutable in Python, you can convert the string to a list of characters, reverse the list in-place, and then join the list back into a string.
+
+\`\`\`python
+original_string = "example"
+char_list = list(original_string) # ['e', 'x', 'a', 'm', 'p', 'l', 'e']
+char_list.reverse() # ['e', 'l', 'p', 'm', 'a', 'x', 'e'] (in-place)
+reversed_string = "".join(char_list)
+print(reversed_string) # Output: elpmaxe
+\`\`\`
+
+**Explanation:**
+* \`list(original_string)\` converts the string into a list of its characters.
+* \`char_list.reverse()\` reverses the elements of the list *in-place*.
+* \`.join(char_list)\``;
+
+  const [selectedAnalyst, setSelectedAnalyst] = useState("@ Data Analyst");
+  const [inputValue, setInputValue] = useState("");
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
-        <ChatContainerContent className="space-y-12 px-4 py-12">
+        <ChatContainerContent className="space px-4 py-12">
           {messages.length === 0 && (
             <div className="mx-auto w-full max-w-3xl shrink-0 px-3 pb-3 md:px-5 md:pb-5">
               <div className="text-foreground mb-2 font-medium">
@@ -383,6 +466,13 @@ function ChatMain() {
                 <li>upload an image and ask about it</li>
                 <li>upload a PDF and ask questions about it</li>
               </ul>
+
+              {<Markdown>{contents}</Markdown>}
+              <Image
+                className="w-2xl h-1/2"
+                src="https://lh3.googleusercontent.com/p/AF1QipOBHS-uvn8NT8HiQoCocbgVGftz58O16F2a85r2=s1360-w1360-h1020-rw"
+                alt="something"
+              />
             </div>
           )}
 
@@ -403,8 +493,7 @@ function ChatMain() {
           {status === "error" && error && <ErrorMessage error={error} />}
         </ChatContainerContent>
       </ChatContainerRoot>
-
-      <div className=" bottom-0 mx-auto w-full max-w-3xl shrink-0 px-3  md:px-5">
+      <div className="inset-1 mx-auto max-w-3xl w-full">
         <div className="bg-gray-200/50 dark:bg-background/50 rounded-t-3xl p-2 backdrop-blur-sm mx-auto">
           <FileUpload
             onFilesAdded={handleFilesAdded}
@@ -415,7 +504,7 @@ function ChatMain() {
               onValueChange={setInput}
               isLoading={isLoading}
               onSubmit={handleSubmit}
-              className="w-full max-w-(--breakpoint-md) bg-white/20 rounded-2xl shadow-2xl backdrop-blur-lg"
+              className="w-full max-w-(--breakpoint-md) bg-white/20 rounded-2xl shadow-2xl backdrop-blur-lg "
             >
               {files.length > 0 && (
                 <div className="flex flex-wrap gap-2 pb-2">
@@ -442,7 +531,7 @@ function ChatMain() {
                       )}
                       <button
                         onClick={() => removeFile(index)}
-                        className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full p-1 hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full p-1 hover:bg-background-700 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="size-4" />
                       </button>
@@ -451,7 +540,10 @@ function ChatMain() {
                 </div>
               )}
 
-              <PromptInputTextarea placeholder="Type a message or drop files..." />
+              <PromptInputTextarea
+                className="dark:bg-transparent"
+                placeholder="Type a message or drop files..."
+              />
 
               <PromptInputActions className="flex items-center justify-between gap-2 pt-2">
                 <PromptInputActions>
@@ -559,3 +651,45 @@ function ChatMain() {
 }
 
 export default ChatMain;
+
+/**
+ <div className="bg-orange-500 rounded-2xl px-4 py-3 flex items-center justify-between ">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-transparent hover:cursor-pointer font-medium text-base p-0 h-auto"
+                >
+                  {selectedAnalyst}
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => setSelectedAnalyst("@ Data Analyst")}
+                >
+                  @ Data Analyst
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSelectedAnalyst("@ Research Assistant")}
+                >
+                  @ Research Assistant
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSelectedAnalyst("@ Code Helper")}
+                >
+                  @ Code Helper
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-orange-600 p-1 h-auto"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+ */

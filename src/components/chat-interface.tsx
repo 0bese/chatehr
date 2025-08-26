@@ -23,8 +23,8 @@ export default function ChatInterface() {
         setSidebarCollapsed={setSidebarCollapsed}
       />
       <ChatHeader />
-      {!sidebarCollapsed && <Sidebar />}
-      <div className="border flex-1 m-1 rounded-sm bg-white dark:bg-black">
+      <Sidebar collapsed={sidebarCollapsed} />
+      <div className="border flex-1 m-1 rounded-sm bg-white dark:bg-[#18181B]">
         <ChatMain />
       </div>
     </div>

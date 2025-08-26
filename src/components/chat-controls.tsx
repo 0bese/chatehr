@@ -15,7 +15,7 @@ export function ChatControls({
 }: ChatControlsProps) {
   return (
     <div className="absolute left-2.5 top-2.5 z-50">
-      <div className="flex items-center gap-0 bg-background/80 backdrop-blur-sm rounded-md p-1 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+      <div className="flex items-center gap-0 bg-background/80 backdrop-blur-sm rounded-sm p-1 shadow-sm border border-gray-200/50 dark:border-gray-700/50">
         <Button
           size="sm"
           variant="ghost"
