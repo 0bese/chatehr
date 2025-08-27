@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage, UIMessagePart } from "ai";
+
 import {
   AlertTriangle,
   ArrowUp,
