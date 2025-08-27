@@ -93,72 +93,74 @@ const CodeComponent = ({
 
 const INITIAL_COMPONENTS: Partial<Components> = {
   code: CodeComponent,
-  pre: function PreComponent({ children }) {
-    return <>{children}</>;
-  },
-  // Add proper styling for lists
-  ul: function UlComponent({ children, ...props }) {
-    return (
-      <ul className="list-disc list-inside space-y-1 my-4 ml-4" {...props}>
-        {children}
-      </ul>
-    );
-  },
-  ol: function OlComponent({ children, ...props }) {
-    return (
-      <ol className="list-decimal list-inside space-y-1 my-4 ml-4" {...props}>
-        {children}
-      </ol>
-    );
-  },
-  li: function LiComponent({ children, ...props }) {
-    return (
-      <li className="leading-relaxed" {...props}>
-        {children}
-      </li>
-    );
-  },
-  // Add proper paragraph spacing
-  p: function PComponent({ children, ...props }) {
-    return (
-      <p className="leading-relaxed" {...props}>
-        {children}
-      </p>
-    );
-  },
-  // Add proper heading spacing
-  h1: function H1Component({ children, ...props }) {
-    return (
-      <h1 className="text-2xl font-bold mb-4 mt-6" {...props}>
-        {children}
-      </h1>
-    );
-  },
-  h2: function H2Component({ children, ...props }) {
-    return (
-      <h2 className="text-xl font-semibold mb-3 mt-5" {...props}>
-        {children}
-      </h2>
-    );
-  },
-  h3: function H3Component({ children, ...props }) {
-    return (
-      <h3 className="text-lg font-medium mb-2 mt-4" {...props}>
-        {children}
-      </h3>
-    );
-  },
-  // Add blockquote styling
-  blockquote: function BlockquoteComponent({ children, ...props }) {
-    return (
-      <blockquote
-        className="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600"
-        {...props}
-      >
-        {children}
-      </blockquote>
-    );
-  },
+  pre: ({ children }) => <>{children}</>,
+
+  /* -------------  LISTS ------------- */
+  ul: ({ children, ...props }) => (
+    <ul
+      className="
+        list-disc list-outside
+        my-4 pl-6 space-y-2
+        [&_ul]:list-[circle]
+        [&_ul_ul]:list-[square]
+      "
+      {...props}
+    >
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }) => (
+    <ol
+      className="
+        list-decimal list-outside
+        my-4 pl-6 space-y-2
+        [&_ol]:list-[lower-alpha]
+        [&_ol_ol]:list-[lower-roman]
+      "
+      {...props}
+    >
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }) => (
+    <li className="leading-relaxed mb-1 last:mb-0" {...props}>
+      {children}
+    </li>
+  ),
+
+  /* -------------  PARAGRAPHS ------------- */
+  p: ({ children, ...props }) => (
+    <p className="leading-relaxed mb-4 last:mb-0" {...props}>
+      {children}
+    </p>
+  ),
+
+  /* -------------  HEADINGS ------------- */
+  h1: ({ children, ...props }) => (
+    <h1 className="text-2xl font-bold mt-8 mb-4" {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 className="text-xl font-semibold mt-6 mb-3" {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 className="text-lg font-medium mt-5 mb-2" {...props}>
+      {children}
+    </h3>
+  ),
+
+  /* -------------  BLOCKQUOTE ------------- */
+  blockquote: ({ children, ...props }) => (
+    <blockquote
+      className="border-l-4 border-gray-300 pl-4 my-6 italic text-gray-600"
+      {...props}
+    >
+      {children}
+    </blockquote>
+  ),
 };
 
 function MarkdownComponent({
@@ -175,7 +177,7 @@ function MarkdownComponent({
 
   return (
     <div
-      className={cn("prose prose-sm max-w-none space-y-4 mb-28", className)}
+      className={cn("prose prose-sm max-w-none space-y-4", className)}
       id={blockId}
     >
       <ReactMarkdown

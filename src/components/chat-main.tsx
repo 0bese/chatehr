@@ -193,11 +193,38 @@ export const MessageComponent = memo(
             </MessageActions>
           </div>
         ) : (
-          <div className="group flex w-full flex-col items-end gap-1">
-            <div className="bg-muted text-primary max-w-[85%] rounded-3xl px-5 py-2.5 whitespace-pre-wrap sm:max-w-[75%]">
-              {message?.parts?.map((part: any, index: number) => {
-                if (part.type === "text") {
-                  return (
+          <>
+            {message?.parts
+              ?.filter((part: any) => part.type === "file")
+              .map((part: any, index: number) => (
+                <div
+                  key={`file-${index}`}
+                  className="group flex w-full flex-col items-end gap-1"
+                >
+                  <div className="bg-transparent text-primary max-w-[85%] rounded-3xl px-0 py-1 whitespace-pre-wrap sm:max-w-[75%]">
+                    {part.mediaType?.startsWith("image/") ? (
+                      <Image
+                        src={part.url}
+                        alt={`attachment-${index}`}
+                        className="w-full h-20 rounded-md mt-2"
+                      />
+                    ) : (
+                      <iframe
+                        src={part.url}
+                        width="100%"
+                        height="400"
+                        title={`pdf-${index}`}
+                        className="mt-2 rounded-md"
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            <div className="group flex w-full flex-col items-end gap-1">
+              <div className="bg-muted text-primary flex max-w-[85%] rounded-3xl px-5 py-2.5 whitespace-pre-wrap sm:max-w-[75%]">
+                {message?.parts
+                  ?.filter((part: any) => part.type === "text")
+                  .map((part: any, index: number) => (
                     <MessageContent
                       key={`text-${index}`}
                       className="bg-transparent p-0"
@@ -205,74 +232,44 @@ export const MessageComponent = memo(
                     >
                       {part.text}
                     </MessageContent>
-                  );
-                }
-                if (
-                  part.type === "file" &&
-                  part.mediaType?.startsWith("image/")
-                ) {
-                  return (
-                    <Image
-                      key={`image-${index}`}
-                      src={part.url}
-                      alt={`attachment-${index}`}
-                      className="max-w-full h-auto rounded-md mt-2"
-                    />
-                  );
-                }
-                if (
-                  part.type === "file" &&
-                  part.mediaType === "application/pdf"
-                ) {
-                  return (
-                    <iframe
-                      key={`pdf-${index}`}
-                      src={part.url}
-                      width="100%"
-                      height="400"
-                      title={`pdf-${index}`}
-                      className="mt-2 rounded-md"
-                    />
-                  );
-                }
-                return null;
-              })}
+                  ))}
+              </div>
+              <MessageActions
+                className={cn(
+                  "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                )}
+              >
+                <MessageAction tooltip="Edit" delayDuration={100}>
+                  <Button
+                    variant="ghost"
+                    onClick={handleCopy}
+                    size="icon"
+                    className=""
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </MessageAction>
+                <MessageAction tooltip="Copy" delayDuration={100}>
+                  <Button
+                    variant="ghost"
+                    onClick={handleCopy}
+                    size="icon"
+                    className=""
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </MessageAction>
+              </MessageActions>
             </div>
-            <MessageActions
-              className={cn(
-                "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-              )}
-            >
-              <MessageAction tooltip="Edit" delayDuration={100}>
-                <Button
-                  variant="ghost"
-                  onClick={handleCopy}
-                  size="icon"
-                  className=""
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </MessageAction>
-              <MessageAction tooltip="Copy" delayDuration={100}>
-                <Button
-                  variant="ghost"
-                  onClick={handleCopy}
-                  size="icon"
-                  className=""
-                >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </MessageAction>
-            </MessageActions>
-          </div>
+          </>
         )}
       </Message>
     );
@@ -445,15 +442,46 @@ print(reversed_string) # Output: elpmaxe
 **Explanation:**
 * \`list(original_string)\` converts the string into a list of its characters.
 * \`char_list.reverse()\` reverses the elements of the list *in-place*.
-* \`.join(char_list)\``;
+* \`.join(char_list)\`
+
+This image displays Body Mass Index (BMI) information, including the calculated BMI, height, and weight, along with a visual representation of BMI categories.
+
+Here's a breakdown:
+
+*   **Key Measurements:**
+    *   **BMI:** 27.4
+    *   **Height:** 168.28 cm
+    *   **Weight:** 77.59 kg
+        * something to check
+
+*   **BMI Scale and Categories:**
+    The horizontal bar graph visually represents different BMI categories, color-coded for easy understanding:
+    *   **Below 18.5 (Underweight):** Represented by the orange section.
+    *   **18.5 - 24.9 (Normal):** Represented by the green section.
+    *   **25 - 29.9 (Overweight):** Represented by the yellow section.
+    *   **30 or over (Obesity):** Represented by the red section.
+    
+
+*   **BMI Indicator:**
+    A blue dot, labeled "BMI Indicator" in the legend, is placed on the horizontal bar at the value of 27.4. This indicates that a BMI of 27.4 falls within the "Overweight" category (25 - 29.9), which is the yellow section of the bar.
+ 
+
+*  **Main item 1**
+   * Sub item 1.1
+   * Sub item 1.2
+      * Sub-sub item 1.2.1
+1. Main item 2
+    a. Numbered sub item 2.1
+    b. Numbered sub item 2.2
+ `;
 
   const [selectedAnalyst, setSelectedAnalyst] = useState("@ Data Analyst");
   const [inputValue, setInputValue] = useState("");
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="relative flex h-full flex-col overflow-hidden">
       <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
-        <ChatContainerContent className="space px-4 py-12">
+        <ChatContainerContent className="space-y-2 px-4 py-12 pb-36">
           {messages.length === 0 && (
             <div className="mx-auto w-full max-w-3xl shrink-0 px-3 pb-3 md:px-5 md:pb-5">
               <div className="text-foreground mb-2 font-medium">
@@ -467,12 +495,12 @@ print(reversed_string) # Output: elpmaxe
                 <li>upload a PDF and ask questions about it</li>
               </ul>
 
-              {<Markdown>{contents}</Markdown>}
+              {/* {<Markdown>{contents}</Markdown>}
               <Image
                 className="w-2xl h-1/2"
-                src="https://lh3.googleusercontent.com/p/AF1QipOBHS-uvn8NT8HiQoCocbgVGftz58O16F2a85r2=s1360-w1360-h1020-rw"
+                src="https://i.imgur.com/F7Wobcj.jpg"
                 alt="something"
-              />
+              /> */}
             </div>
           )}
 
@@ -492,160 +520,161 @@ print(reversed_string) # Output: elpmaxe
           {isLoading && <LoadingMessage />}
           {status === "error" && error && <ErrorMessage error={error} />}
         </ChatContainerContent>
-      </ChatContainerRoot>
-      <div className="inset-1 mx-auto max-w-3xl w-full">
-        <div className="bg-gray-200/50 dark:bg-background/50 rounded-t-3xl p-2 backdrop-blur-sm mx-auto">
-          <FileUpload
-            onFilesAdded={handleFilesAdded}
-            accept=".jpg,.jpeg,.png,.pdf,.docx,.webp"
-          >
-            <PromptInput
-              value={input}
-              onValueChange={setInput}
-              isLoading={isLoading}
-              onSubmit={handleSubmit}
-              className="w-full max-w-(--breakpoint-md) bg-white/20 rounded-2xl shadow-2xl backdrop-blur-lg "
+
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-3xl px-4">
+          <div className="bg-gray-200/50 dark:bg-stone-800/70 rounded-t-3xl p-2 backdrop-blur-sm mx-auto">
+            <FileUpload
+              onFilesAdded={handleFilesAdded}
+              accept=".jpg,.jpeg,.png,.pdf,.docx,.webp"
             >
-              {files.length > 0 && (
-                <div className="flex flex-wrap gap-2 pb-2">
-                  {files.map(({ file, base64 }, index) => (
-                    <div key={index} className="relative group">
-                      {base64 ? (
-                        <Image
-                          src={base64}
-                          alt={file.name}
-                          className="h-16 w-16 rounded-md object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="bg-secondary flex h-16 w-16 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex flex-col items-center gap-1">
-                            <Paperclip className="size-4" />
-                            <span className="max-w-[120px] truncate text-xs">
-                              {file.name}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <button
-                        onClick={() => removeFile(index)}
-                        className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full p-1 hover:bg-background-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="size-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <PromptInputTextarea
-                className="dark:bg-transparent"
-                placeholder="Type a message or drop files..."
-              />
-
-              <PromptInputActions className="flex items-center justify-between gap-2 pt-2">
-                <PromptInputActions>
-                  <PromptInputAction tooltip="Attach files">
-                    <FileUploadTrigger asChild>
-                      <div className="hover:bg-secondary-foreground/10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl">
-                        <Paperclip className="text-primary size-5" />
-                      </div>
-                    </FileUploadTrigger>
-                  </PromptInputAction>
-
-                  <div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-2 hover:bg-white/20 dark:hover:bg-gray-700/30 text-gray-500/80 dark:text-gray-400/80"
-                          // disabled={}
-                        >
-                          <span>{selectedModel}</span>
-                          <ChevronDown className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-48">
-                        {models.map((model) => (
-                          <DropdownMenuItem
-                            key={model}
-                            onClick={() => setSelectedModel(model)}
-                            className={
-                              selectedModel === model ? "bg-accent" : ""
-                            }
+              <PromptInput
+                value={input}
+                onValueChange={setInput}
+                isLoading={isLoading}
+                onSubmit={handleSubmit}
+                className="w-full max-w-(--breakpoint-md) bg-white/20 rounded-2xl shadow-2xl backdrop-blur-lg "
+              >
+                {files.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pb-2">
+                    {files.map(({ file, base64 }, index) => (
+                      <div key={index} className="relative group">
+                        {base64 ? (
+                          <Image
+                            src={base64}
+                            alt={file.name}
+                            className="h-16 w-16 rounded-md object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="bg-secondary flex h-16 w-16 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            {model}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            <div className="flex flex-col items-center gap-1">
+                              <Paperclip className="size-4" />
+                              <span className="max-w-[120px] truncate text-xs">
+                                {file.name}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="absolute -top-1 -right-1 bg-gray-800 text-white rounded-full p-1 hover:bg-background-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <div className=" flex justify-center items-center gap-2">
-                    <Switch
-                      checked={hideToolCall}
-                      onCheckedChange={setHideToolCall}
-                    />{" "}
-                    <span className="text-gray-500/90 text-sm">
-                      Hide Tool call
-                    </span>
-                  </div>
-                </PromptInputActions>
+                )}
 
-                <PromptInputAction
-                  tooltip={isLoading ? "Stop generation" : "Send message"}
-                >
-                  <Button
-                    variant="default"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    onClick={handleSubmit}
-                    disabled={
-                      isLoading || (!input.trim() && files.length === 0)
-                    }
+                <PromptInputTextarea
+                  className="dark:bg-transparent"
+                  placeholder="Type a message or drop files..."
+                />
+
+                <PromptInputActions className="flex items-center justify-between gap-2 pt-2">
+                  <PromptInputActions>
+                    <PromptInputAction tooltip="Attach files">
+                      <FileUploadTrigger asChild>
+                        <div className="hover:bg-secondary-foreground/10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl">
+                          <Paperclip className="text-primary size-5" />
+                        </div>
+                      </FileUploadTrigger>
+                    </PromptInputAction>
+
+                    <div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-2 hover:bg-white/20 dark:hover:bg-stone-700/30 text-[#737373]/80 dark:text-[#A1A1A1]"
+                            // disabled={}
+                          >
+                            <span>{selectedModel}</span>
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48">
+                          {models.map((model) => (
+                            <DropdownMenuItem
+                              key={model}
+                              onClick={() => setSelectedModel(model)}
+                              className={
+                                selectedModel === model ? "bg-accent" : ""
+                              }
+                            >
+                              {model}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className=" flex justify-center items-center gap-2">
+                      <Switch
+                        checked={hideToolCall}
+                        onCheckedChange={setHideToolCall}
+                      />{" "}
+                      <span className="text-[#737373] dark:text-[#A1A1A1] text-sm">
+                        Hide Tool call
+                      </span>
+                    </div>
+                  </PromptInputActions>
+
+                  <PromptInputAction
+                    tooltip={isLoading ? "Stop generation" : "Send message"}
                   >
-                    {isLoading ? (
-                      <Square className="size-5 fill-current" />
-                    ) : (
-                      <ArrowUp className="size-5" />
-                    )}
-                  </Button>
-                </PromptInputAction>
-              </PromptInputActions>
-            </PromptInput>
-
-            <FileUploadContent>
-              <div className="flex min-h-[200px] w-full items-center justify-center backdrop-blur-sm">
-                <div className="bg-background/90 m-4 w-full max-w-md rounded-lg border p-8 shadow-lg">
-                  <div className="mb-4 flex justify-center">
-                    <svg
-                      className="text-muted size-8"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                    <Button
+                      variant="default"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={handleSubmit}
+                      disabled={
+                        isLoading || (!input.trim() && files.length === 0)
+                      }
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-                      />
-                    </svg>
+                      {isLoading ? (
+                        <Square className="size-5 fill-current" />
+                      ) : (
+                        <ArrowUp className="size-5" />
+                      )}
+                    </Button>
+                  </PromptInputAction>
+                </PromptInputActions>
+              </PromptInput>
+
+              <FileUploadContent>
+                <div className="flex min-h-[200px] w-full items-center justify-center backdrop-blur-sm">
+                  <div className="bg-background/90 m-4 w-full max-w-md rounded-lg border p-8 shadow-lg">
+                    <div className="mb-4 flex justify-center">
+                      <svg
+                        className="text-muted size-8"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="mb-2 text-center text-base font-medium">
+                      Drop files to upload
+                    </h3>
+                    <p className="text-muted-foreground text-center text-sm">
+                      Release to add files to your message
+                    </p>
                   </div>
-                  <h3 className="mb-2 text-center text-base font-medium">
-                    Drop files to upload
-                  </h3>
-                  <p className="text-muted-foreground text-center text-sm">
-                    Release to add files to your message
-                  </p>
                 </div>
-              </div>
-            </FileUploadContent>
-          </FileUpload>
+              </FileUploadContent>
+            </FileUpload>
+          </div>
         </div>
-      </div>
+      </ChatContainerRoot>
     </div>
   );
 }
