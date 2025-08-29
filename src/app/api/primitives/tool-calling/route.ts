@@ -152,22 +152,22 @@ import { convertMCPToolToAiTool } from "@/lib/utils";
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
 
-  const client = new MultiServerMCPClient({
-    throwOnLoadError: true,
-    prefixToolNameWithServerName: false,
-    additionalToolNamePrefix: "",
-    useStandardContentBlocks: true,
+  // const client = new MultiServerMCPClient({
+  //   throwOnLoadError: true,
+  //   prefixToolNameWithServerName: false,
+  //   additionalToolNamePrefix: "",
+  //   useStandardContentBlocks: true,
 
-    mcpServers: {
-      "fhir-mcp": {
-        url: "https://fhir-mcp.onrender.com/mcp",
-        automaticSSEFallback: false,
-      },
-    },
-  });
+  //   mcpServers: {
+  //     "fhir-mcp": {
+  //       url: "https://fhir-mcp.onrender.com/mcp",
+  //       automaticSSEFallback: false,
+  //     },
+  //   },
+  // });
 
-  const tools = await client.getTools();
-  const aiTools = Object.assign({}, ...tools.map(convertMCPToolToAiTool));
+  // const tools = await client.getTools();
+  // const aiTools = Object.assign({}, ...tools.map(convertMCPToolToAiTool));
 
   // console.log("aisdktools: ", JSON.stringify(aiTools.get_patient, null, 2));
 
@@ -177,7 +177,7 @@ export async function POST(req: Request) {
     messages: convertToModelMessages(messages),
     stopWhen: stepCountIs(10),
     tools: {
-      ...aiTools,
+      // ...aiTools,
       calculate: tool({
         description:
           "A tool for evaluating mathematical expressions. " +

@@ -22,7 +22,7 @@ import type { ToolPart } from "@/components/prompt-kit/tool";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { createIdGenerator, DefaultChatTransport } from "ai";
 import type { UIMessage, UIMessagePart } from "ai";
 
 import {
@@ -304,7 +304,10 @@ const ErrorMessage = memo(({ error }: { error: Error }) => (
 
 ErrorMessage.displayName = "ErrorMessage";
 
-function ChatMain() {
+function ChatMain({
+  id,
+  initialMessages,
+}: { id?: string | undefined; initialMessages?: UIMessage[] } = {}) {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<{ file: File; base64: string | null }[]>(
     []
@@ -313,9 +316,14 @@ function ChatMain() {
   const [hideToolCall, setHideToolCall] = useState(false);
 
   const { messages, sendMessage, status, error, regenerate } = useChat({
+    id,
+    messages: initialMessages,
     transport: new DefaultChatTransport({
-      api: "/api/primitives/tool-calling", // Changed to match the simpler example
-      // api: "/api/chat", // Changed to match the simpler example
+      // api: "/api/primitives/tool-calling", // Changed to match the simpler example
+      api: "/api/chat", // Changed to match the simpler example
+      prepareSendMessagesRequest({ messages, id }) {
+        return { body: { message: messages[messages.length - 1], id } };
+      },
     }),
   });
 
@@ -368,114 +376,9 @@ function ChatMain() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const contents = `
-  There are several ways to reverse a string in Python, ranging from very concise and "Pythonic" to more explicit iterative approaches.
-
-Here are the most common methods:
-
----
-
-### 1. Using String Slicing (The Pythonic Way)
-
-This is by far the most common, concise, and idiomatic way to reverse a string in Python.
-
-\`\`\`python
-original_string = "hello"
-reversed_string = original_string[::-1]
-print(reversed_string) # Output: olleh
-\`\`\`
-
-**Explanation:**
-* \`[start:end:step]\` is the general syntax for slicing.
-* Omitting \`start\` and \`end\` means "from the beginning to the end of the string".
-* \`[::-1]\` means "step backwards by 1". This effectively iterates through the string from the last character to the first.
-
----
-
-### 2. Using \`reversed()\` function and \`join()\`
-
-The \`reversed()\` function returns an iterator that yields elements in reverse order. Since \`reversed()\` returns an iterator of characters, you need to use \`"".join()\` to concatenate them back into a single string.
-
-\`\`\`python
-original_string = "python"
-reversed_string = "".join(reversed(original_string))
-print(reversed_string) # Output: nohtyp
-\`\`\`
-
-**Explanation:**
-* \`reversed(original_string)\` produces an iterator: \`('n', 'o', 'h', 't', 'y', 'p')\`.
-* \`"".join(...)\` concatenates these characters into a string, using an empty string \`""\` as the separator.
-
----
-
-### 3. Using a \`for\` loop (Iterative Approach)
-
-This method involves iterating through the original string and building the reversed string character by character.
-
-\`\`\`python
-original_string = "world"
-reversed_string = ""
-for char in original_string:
-reversed_string = char + reversed_string # Prepend each character
-
-print(reversed_string) # Output: dlrow
-\`\`\`
-
-**Explanation:**
-* We start with an empty \`reversed_string\`.
-* In each iteration, we take a character (\`char\`) from \`original_string\`.
-* We then add \`char\` to the *beginning* of \`reversed_string\`. This ensures that characters are added in reverse order.
-
----
-
-### 4. Converting to a list, reversing, and joining back
-
-Since strings are immutable in Python, you can convert the string to a list of characters, reverse the list in-place, and then join the list back into a string.
-
-\`\`\`python
-original_string = "example"
-char_list = list(original_string) # ['e', 'x', 'a', 'm', 'p', 'l', 'e']
-char_list.reverse() # ['e', 'l', 'p', 'm', 'a', 'x', 'e'] (in-place)
-reversed_string = "".join(char_list)
-print(reversed_string) # Output: elpmaxe
-\`\`\`
-
-**Explanation:**
-* \`list(original_string)\` converts the string into a list of its characters.
-* \`char_list.reverse()\` reverses the elements of the list *in-place*.
-* \`.join(char_list)\`
-
-This image displays Body Mass Index (BMI) information, including the calculated BMI, height, and weight, along with a visual representation of BMI categories.
-
-Here's a breakdown:
-
-*   **Key Measurements:**
-    *   **BMI:** 27.4
-    *   **Height:** 168.28 cm
-    *   **Weight:** 77.59 kg
-        * something to check
-
-*   **BMI Scale and Categories:**
-    The horizontal bar graph visually represents different BMI categories, color-coded for easy understanding:
-    *   **Below 18.5 (Underweight):** Represented by the orange section.
-    *   **18.5 - 24.9 (Normal):** Represented by the green section.
-    *   **25 - 29.9 (Overweight):** Represented by the yellow section.
-    *   **30 or over (Obesity):** Represented by the red section.
-    
-
-*   **BMI Indicator:**
-    A blue dot, labeled "BMI Indicator" in the legend, is placed on the horizontal bar at the value of 27.4. This indicates that a BMI of 27.4 falls within the "Overweight" category (25 - 29.9), which is the yellow section of the bar.
- 
-
-*  **Main item 1**
-   * Sub item 1.1
-   * Sub item 1.2
-      * Sub-sub item 1.2.1
-1. Main item 2
-    a. Numbered sub item 2.1
-    b. Numbered sub item 2.2
- `;
-
+  {
+    console.log("messages: ", messages);
+  }
   const [selectedAnalyst, setSelectedAnalyst] = useState("@ Data Analyst");
   const [inputValue, setInputValue] = useState("");
 
@@ -495,13 +398,6 @@ Here's a breakdown:
                 <li>upload an image and ask about it</li>
                 <li>upload a PDF and ask questions about it</li>
               </ul>
-
-              {/* {<Markdown>{contents}</Markdown>}
-              <Image
-                className="w-2xl h-1/2"
-                src="https://i.imgur.com/F7Wobcj.jpg"
-                alt="something"
-              /> */}
             </div>
           )}
 
