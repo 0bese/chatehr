@@ -8,7 +8,7 @@ export default {
   dbCredentials: {
     host: env.HOST, // Use public endpoint
     port: 4000,
-    user: "yW1YNC1qtpodH6m.root",
+    user: env.USER,
     password: env.PASSWORD,
     database: env.DATABASE,
     ssl: { rejectUnauthorized: false },
