@@ -1,6 +1,7 @@
 import {
   convertToModelMessages,
   createIdGenerator,
+  stepCountIs,
   streamText,
   tool,
   TypeValidationError,
@@ -93,6 +94,8 @@ export async function POST(req: NextRequest) {
     const result = streamText({
       model: google("gemini-2.5-flash"),
       messages: modelMessages,
+      tools,
+      stopWhen: stepCountIs(10),
     });
 
     return result.toUIMessageStreamResponse({
