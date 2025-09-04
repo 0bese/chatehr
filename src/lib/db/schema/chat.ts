@@ -5,6 +5,7 @@ import {
   timestamp,
   json,
   index,
+  boolean,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
@@ -24,6 +25,7 @@ export const chats = mysqlTable(
     id: varchar("id", { length: 36 }).primaryKey(),
     userId: varchar("user_id", { length: 36 }).notNull(),
     title: varchar("title", { length: 255 }),
+    pinned: boolean("pinned").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   },

@@ -2,7 +2,7 @@
 import { db } from "@/lib/db";
 import { chats, messages, streams, users } from "@/lib/db/schema/chat";
 import { UIMessage } from "ai";
-import { eq, asc, desc, and } from "drizzle-orm";
+import { eq, asc, desc, and, count } from "drizzle-orm";
 import { generateId } from "ai";
 
 interface CreateChatParams {
@@ -204,25 +204,6 @@ export async function appendStreamId({
   });
 }
 
-// Utility function to get user's chats
-export async function getUserChats(practitionerId: string) {
-  const user = await db
-    .select()
-    .from(users)
-    .where(eq(users.practitionerId, practitionerId))
-    .limit(1);
-
-  if (!user || user.length === 0) {
-    return [];
-  }
-
-  return await db
-    .select()
-    .from(chats)
-    .where(eq(chats.userId, user[0].id))
-    .orderBy(asc(chats.updatedAt));
-}
-
 export async function verifyChatAccess({
   id,
   practitionerId,
@@ -240,4 +221,158 @@ export async function verifyChatAccess({
     .limit(1);
 
   return chatWithUser.length > 0;
+}
+
+// Add these functions to your lib/actions/chats.ts file
+
+export async function updateChatTitle({
+  chatId,
+  practitionerId,
+  title,
+}: {
+  chatId: string;
+  practitionerId: string;
+  title: string;
+}): Promise<void> {
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.practitionerId, practitionerId))
+    .limit(1);
+
+  if (!user || user.length === 0) {
+    throw new Error("User not found");
+  }
+
+  const chat = await db
+    .select()
+    .from(chats)
+    .where(eq(chats.id, chatId))
+    .limit(1);
+
+  if (!chat || chat.length === 0 || chat[0].userId !== user[0].id) {
+    throw new Error("Chat not found or unauthorized");
+  }
+
+  await db
+    .update(chats)
+    .set({
+      title: title.trim() || "Untitled Chat",
+      updatedAt: new Date(),
+    })
+    .where(eq(chats.id, chatId));
+}
+
+// lib/actions/chats.ts (relevant functions with fixes)
+
+export async function getUserChats(practitionerId: string) {
+  console.log("backend", practitionerId);
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.practitionerId, practitionerId))
+    .limit(1);
+
+  if (!user || user.length === 0) {
+    return [];
+  }
+
+  const userChats = await db
+    .select({
+      id: chats.id,
+      userId: chats.userId,
+      title: chats.title,
+      pinned: chats.pinned,
+      createdAt: chats.createdAt,
+      updatedAt: chats.updatedAt,
+      messageCount: count(messages.id),
+    })
+    .from(chats)
+    .leftJoin(messages, eq(chats.id, messages.chatId))
+    .where(eq(chats.userId, user[0].id))
+    .groupBy(chats.id)
+    .orderBy(desc(chats.updatedAt));
+
+  return userChats;
+}
+
+export async function deleteChat({
+  chatId,
+  practitionerId,
+}: {
+  chatId: string;
+  practitionerId: string;
+}): Promise<void> {
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.practitionerId, practitionerId))
+    .limit(1);
+
+  if (!user || user.length === 0) {
+    throw new Error("User not found");
+  }
+
+  // Check if chat exists and belongs to user - be explicit about what we select
+  const chat = await db
+    .select({
+      id: chats.id,
+      userId: chats.userId,
+    })
+    .from(chats)
+    .where(eq(chats.id, chatId))
+    .limit(1);
+
+  if (!chat || chat.length === 0 || chat[0].userId !== user[0].id) {
+    throw new Error("Chat not found or unauthorized");
+  }
+
+  // Delete related records first (messages and streams)
+  await db.delete(streams).where(eq(streams.chatId, chatId));
+  await db.delete(messages).where(eq(messages.chatId, chatId));
+
+  // Finally delete the chat
+  await db.delete(chats).where(eq(chats.id, chatId));
+}
+
+export async function togglePinChat({
+  chatId,
+  practitionerId,
+}: {
+  chatId: string;
+  practitionerId: string;
+}): Promise<void> {
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.practitionerId, practitionerId))
+    .limit(1);
+
+  if (!user || user.length === 0) {
+    throw new Error("User not found");
+  }
+
+  // Get the current pinned status
+  const chat = await db
+    .select({
+      id: chats.id,
+      userId: chats.userId,
+      pinned: chats.pinned,
+    })
+    .from(chats)
+    .where(eq(chats.id, chatId))
+    .limit(1);
+
+  if (!chat || chat.length === 0 || chat[0].userId !== user[0].id) {
+    throw new Error("Chat not found or unauthorized");
+  }
+
+  // Toggle the pinned status
+  await db
+    .update(chats)
+    .set({
+      pinned: !chat[0].pinned,
+      updatedAt: new Date(),
+    })
+    .where(eq(chats.id, chatId));
 }

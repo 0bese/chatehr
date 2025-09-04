@@ -1,6 +1,6 @@
 "use client";
 import { Sidebar } from "@/components/sidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatControls } from "@/components/chat-controls";
 import { ChatHeader } from "@/components/chat-header";
 
@@ -10,7 +10,6 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   return (
     <div className="flex relative h-screen">
       <ChatControls

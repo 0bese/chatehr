@@ -118,13 +118,7 @@
 //       //   }),
 //       //   execute: async ({ content }) => createResource({ content }),
 //       // }),
-//       // getInformation: tool({
-//       //   description: `get information from your knowledge base to answer personal  questions.`,
-//       //   inputSchema: z.object({
-//       //     question: z.string().describe("the users question"),
-//       //   }),
-//       //   execute: async ({ question }) => findRelevantContent(question),
-//       // }),
+//
 //     },
 //     // onFinish: async () => {
 //     //   await mcpClient.close();

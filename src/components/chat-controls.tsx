@@ -43,7 +43,7 @@ export function ChatControls({
             >
               <Plus className="w-5 h-5" />
             </Button>
-          </>
+          </> 
         )}
       </div>
     </div>

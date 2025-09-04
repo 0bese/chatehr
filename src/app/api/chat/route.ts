@@ -1,6 +1,7 @@
 import {
   convertToModelMessages,
   createIdGenerator,
+  smoothStream,
   stepCountIs,
   streamText,
   tool,
@@ -16,10 +17,36 @@ import {
   verifyChatAccess,
 } from "@/lib/actions/chat";
 import { getCurrentUser } from "@/lib/auth";
-// app/api/chat/route.ts
+
 import { NextRequest } from "next/server";
 import z from "zod";
+import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 export const maxDuration = 30;
+
+// const client = new MultiServerMCPClient({
+//   throwOnLoadError: true,
+//   prefixToolNameWithServerName: false,
+//   additionalToolNamePrefix: "",
+//   useStandardContentBlocks: true,
+
+//   mcpServers: {
+//     "fhir-mcp": {
+//       url: "https://fhir-mcp.onrender.com/mcp",
+//       automaticSSEFallback: false,
+//     },
+//   },
+// });
+
+// const tools = await client.getTools();
+// const aiTools = Object.assign({}, ...tools.map(convertMCPToolToAiTool));
+//  getInformation: tool({
+//   description: `get information from your knowledge base to answer personal  questions.`,
+//   inputSchema: z.object({
+//     question: z.string().describe("the users question"),
+//   }),
+//   execute: async ({ question }) => findRelevantContent(question),
+// }),
+
 const tools = {
   getCurrentDate: tool({
     description: "Get the current date and time with timezone information",
@@ -96,6 +123,10 @@ export async function POST(req: NextRequest) {
       messages: modelMessages,
       tools,
       stopWhen: stepCountIs(10),
+      experimental_transform: smoothStream({
+        delayInMs: 20, // optional: defaults to 10ms
+        chunking: "word", // optional: defaults to 'word'
+      }),
     });
 
     return result.toUIMessageStreamResponse({
@@ -111,6 +142,7 @@ export async function POST(req: NextRequest) {
           messages: updatedMessages,
         });
       },
+      //  await mcpClient.close();
     });
   } catch (error) {
     if (error instanceof TypeValidationError) {
