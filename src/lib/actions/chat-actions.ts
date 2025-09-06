@@ -1,14 +1,21 @@
 // lib/actions/chat-actions.ts
 "use server";
 
-import { getUserChats, createChat, deleteChat, updateChatTitle, togglePinChat } from "./chat";
+import {
+  getUserChats,
+  createChat,
+  deleteChat,
+  updateChatTitle,
+  togglePinChat,
+} from "./chat";
 import { getCurrentUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 export async function fetchUserChats() {
   try {
-    const { practitionerId } = getCurrentUser();
-    const chats = await getUserChats(practitionerId);
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthenticated" };
+
+    const chats = await getUserChats(user.practitionerId);
     return { success: true, data: chats };
   } catch (error) {
     console.error("Server action error:", error);
@@ -18,9 +25,11 @@ export async function fetchUserChats() {
 
 export async function createNewChat(title?: string) {
   try {
-    const { practitionerId } = getCurrentUser();
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthenticated" };
+
     const chatId = await createChat({
-      practitionerId,
+      practitionerId: user.practitionerId,
       title: title || "New Chat",
     });
 
@@ -33,9 +42,10 @@ export async function createNewChat(title?: string) {
 
 export async function deleteChatAction(chatId: string) {
   try {
-    const { practitionerId } = getCurrentUser();
-    await deleteChat({ chatId, practitionerId });
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthenticated" };
 
+    await deleteChat({ chatId, practitionerId: user.practitionerId });
     return { success: true };
   } catch (error) {
     console.error("Server action error:", error);
@@ -45,9 +55,14 @@ export async function deleteChatAction(chatId: string) {
 
 export async function updateChatTitleAction(chatId: string, title: string) {
   try {
-    const { practitionerId } = getCurrentUser();
-    await updateChatTitle({ chatId, practitionerId, title });
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthenticated" };
 
+    await updateChatTitle({
+      chatId,
+      practitionerId: user.practitionerId,
+      title,
+    });
     return { success: true };
   } catch (error) {
     console.error("Server action error:", error);
@@ -57,9 +72,10 @@ export async function updateChatTitleAction(chatId: string, title: string) {
 
 export async function togglePinChatAction(chatId: string) {
   try {
-    const { practitionerId } = getCurrentUser();
-    await togglePinChat({ chatId, practitionerId });
+    const user = await getCurrentUser();
+    if (!user) return { success: false, error: "Unauthenticated" };
 
+    await togglePinChat({ chatId, practitionerId: user.practitionerId });
     return { success: true };
   } catch (error) {
     console.error("Server action error:", error);

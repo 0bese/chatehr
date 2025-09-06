@@ -11,7 +11,8 @@ export const env = createEnv({
       HOST: z.string(),
       USER: z.string(),
       PASSWORD: z.string(),
-      DATABASE: z.string()
+      DATABASE: z.string(),
+      SESSION_SECRET: z.string().min(1),
   },
   client: {
     // NEXT_PUBLIC_PUBLISHABLE_KEY: z.string().min(1),

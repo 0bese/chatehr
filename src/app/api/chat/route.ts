@@ -6,48 +6,45 @@ import {
   streamText,
   tool,
   TypeValidationError,
-  UIMessage,
-  validateUIMessages,
 } from "ai";
 import { google } from "@ai-sdk/google";
-import {
-  loadChat,
-  saveChat,
-  appendStreamId,
-  verifyChatAccess,
-} from "@/lib/actions/chat";
+import { loadChat, saveChat, verifyChatAccess } from "@/lib/actions/chat";
 import { getCurrentUser } from "@/lib/auth";
 
 import { NextRequest } from "next/server";
 import z from "zod";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
+import { convertMCPToolToAiTool } from "@/lib/utils";
+import { findRelevantContent } from "@/lib/ai/embedding";
 export const maxDuration = 30;
 
-// const client = new MultiServerMCPClient({
-//   throwOnLoadError: true,
-//   prefixToolNameWithServerName: false,
-//   additionalToolNamePrefix: "",
-//   useStandardContentBlocks: true,
+const client = new MultiServerMCPClient({
+  throwOnLoadError: true,
+  prefixToolNameWithServerName: false,
+  additionalToolNamePrefix: "",
+  useStandardContentBlocks: true,
 
-//   mcpServers: {
-//     "fhir-mcp": {
-//       url: "https://fhir-mcp.onrender.com/mcp",
-//       automaticSSEFallback: false,
-//     },
-//   },
-// });
+  mcpServers: {
+    "fhir-mcp": {
+      url: "https://fhir-mcp.onrender.com/mcp",
+      automaticSSEFallback: false,
+    },
+  },
+});
 
-// const tools = await client.getTools();
-// const aiTools = Object.assign({}, ...tools.map(convertMCPToolToAiTool));
-//  getInformation: tool({
-//   description: `get information from your knowledge base to answer personal  questions.`,
-//   inputSchema: z.object({
-//     question: z.string().describe("the users question"),
-//   }),
-//   execute: async ({ question }) => findRelevantContent(question),
-// }),
+const toools = await client.getTools();
+console.log(toools);
+const aiTools = Object.assign({}, ...toools.map(convertMCPToolToAiTool));
+getInformation: tool({
+  description: `get information from your knowledge base to answer personal  questions.`,
+  inputSchema: z.object({
+    question: z.string().describe("the users question"),
+  }),
+  execute: async ({ question }) => findRelevantContent(question),
+});
 
 const tools = {
+  ...aiTools,
   getCurrentDate: tool({
     description: "Get the current date and time with timezone information",
     inputSchema: z.object({}),
@@ -74,7 +71,7 @@ const tools = {
 };
 
 export async function POST(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user?.practitionerId) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -156,7 +153,7 @@ export async function POST(req: NextRequest) {
 
 // GET endpoint for resuming streams (optional)
 export async function GET(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user?.practitionerId) {
     return new Response("Unauthorized", { status: 401 });
   }

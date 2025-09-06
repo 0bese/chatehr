@@ -77,6 +77,9 @@ importers:
       '@tidbcloud/serverless':
         specifier: ^0.2.0
         version: 0.2.0
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
       ai:
         specifier: ^5.0.17
         version: 5.0.17(zod@4.0.17)
@@ -98,6 +101,9 @@ importers:
       fhirclient:
         specifier: ^2.6.0
         version: 2.6.0(@types/node@20.19.11)(expo@53.0.20(@babel/core@7.28.3)(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.1.10)(react@19.1.0))(react@19.1.0))(react-native@0.81.0(@babel/core@7.28.3)(@react-native/metro-config@0.81.0(@babel/core@7.28.3))(@types/react@19.1.10)(react@19.1.0))
+      jose:
+        specifier: ^6.1.0
+        version: 6.1.0
       lucide-react:
         specifier: ^0.540.0
         version: 0.540.0(react@19.1.0)
@@ -152,6 +158,9 @@ importers:
       use-stick-to-bottom:
         specifier: ^1.1.1
         version: 1.1.1(react@19.1.0)
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
       zod:
         specifier: ^4.0.17
         version: 4.0.17
@@ -4573,6 +4582,9 @@ packages:
 
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
+
+  jose@6.1.0:
+    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
 
   js-base64@3.7.8:
     resolution: {integrity: sha512-hNngCeKxIUQiEUN3GPJOkz4wF/YvdUdbNL9hsBcMQTkKzboD7T/q3OYOuuPZLUE6dBxSGpwhk5mwuDud7JVAow==}
@@ -12037,6 +12049,8 @@ snapshots:
   jiti@2.5.1: {}
 
   jose@4.15.9: {}
+
+  jose@6.1.0: {}
 
   js-base64@3.7.8: {}
 

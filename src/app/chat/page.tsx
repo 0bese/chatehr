@@ -12,9 +12,9 @@ export default async function NewChatPage() {
   let chatId: string;
 
   try {
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     if (!user?.practitionerId) {
-      redirect("/login");
+      redirect("/launch");
     }
     // Create a new chat and get the generated ID
     chatId = await createChat({ practitionerId: user.practitionerId });

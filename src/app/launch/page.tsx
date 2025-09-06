@@ -8,7 +8,7 @@ export default function LaunchPage() {
       client_id: "6a5f11bd5b114d9c8c231be375d1911b",
       scope:
         "patient/*.* user/*.* launch launch/patient launch/encounter openid fhirUser profile offline_access",
-      redirectUri: "http://localhost:3000",
+      redirectUri: "http://localhost:3000/chat",
     });
   }, []);
 
