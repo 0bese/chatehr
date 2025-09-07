@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+} from "react";
 import FHIR from "fhirclient";
 import Client from "fhirclient/lib/Client";
 import { createOrUpdateUser } from "@/lib/actions/auth";
@@ -29,127 +36,97 @@ export function FhirClientProvider({
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
+  const initDone = useRef(false); // 1. guard against double-mount
+
   useEffect(() => {
-    const initializeFhirClient = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    if (initDone.current) return; // already booted
+    initDone.current = true;
 
-        // Initialize FHIR client
-        const fhirClient = await FHIR.oauth2.ready();
-
-        // Extract required information
-        const fhirBaseUrl = fhirClient.state.serverUrl;
-        const accessToken = fhirClient.state.tokenResponse?.access_token;
+    FHIR.oauth2
+      .ready()
+      .then(async (fhirClient) => {
+        const {
+          serverUrl: fhirBaseUrl,
+          tokenResponse: { access_token: accessToken } = {},
+        } = fhirClient.state;
         const practitionerId = fhirClient.user?.id;
         const patientId = fhirClient.patient?.id;
-        const encounterId = fhirClient.encounter?.id;
 
-        // Validate required data
-        if (!fhirBaseUrl || !accessToken || !practitionerId) {
+        if (!fhirBaseUrl || !accessToken || !practitionerId)
           throw new Error("Missing required FHIR authentication data");
-        }
 
-        // Get practitioner name if possible
-        let practitionerName: string = "";
-        try {
-          if (fhirClient.user?.fhirUser) {
-            const practitioner = await fhirClient.request(
-              fhirClient.user.fhirUser
-            );
-            if (practitioner?.name?.[0]) {
-              const name = practitioner.name[0];
-              practitionerName = `${name.given?.join(" ") || ""} ${
-                name.family || ""
-              }`.trim();
-            }
-          }
-        } catch (nameError) {
-          console.warn("Could not fetch practitioner name:", nameError);
-        }
+        // --- names ----------------------------------------------------------
+        const practitionerName = await fhirClient
+          .request(fhirClient.user!.fhirUser!)
+          .then((p) => humanName(p?.name?.[0]))
+          .catch(() => "");
 
-        // Get patient name if possible
-        let patientName: string = "";
-        try {
-          if (fhirClient.user?.fhirUser) {
-            const patient = await fhirClient.request(`Patient/${patientId}`);
-            if (patient?.name?.[0]) {
-              const name = patient.name[0];
-              patientName = `${name.given?.join(" ") || ""} ${
-                name.family || ""
-              }`.trim();
-            }
-          }
-          console.log(patientName);
-        } catch (nameError) {
-          console.warn("Could not fetch patient name:", nameError);
-        }
+        const patientName = patientId
+          ? await fhirClient
+              .request(`Patient/${patientId}`)
+              .then((p) => humanName(p?.name?.[0]))
+              .catch(() => "")
+          : "";
 
-        // Create or update user and session
-        const result = await createOrUpdateUser({
+        // --- session --------------------------------------------------------
+        const { success, error } = await createOrUpdateUser({
           practitionerId,
           name: practitionerName,
           patientId: patientId || undefined,
-          patientName: patientName,
+          patientName,
           fhirBaseUrl,
           accessToken,
         });
 
-        if (!result.success) {
-          throw new Error(result.error || "Failed to create user session");
-        }
+        if (!success) throw new Error(error || "Failed to create user session");
 
         setClient(fhirClient);
         setIsReady(true);
-      } catch (err) {
-        console.error("FHIR initialization error:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to initialize FHIR client"
-        );
-      } finally {
-        setIsLoading(false);
-        console.log(isLoading);
-      }
-    };
-
-    initializeFhirClient();
+      })
+      .catch((err) => {
+        console.error("FHIR init error:", err);
+        setError(err instanceof Error ? err.message : "FHIR init failed");
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  const value: FhirContextType = {
-    client,
-    isLoading,
-    error,
-    isReady,
-  };
+  // 2. stable context value → no spurious re-renders
+  const value = useMemo(
+    () => ({ client, isLoading, error, isReady }),
+    [client, isLoading, error, isReady]
+  );
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Initializing FHIR connection...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Initializing FHIR connection…</p>
         </div>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <div className="flex items-center justify-center min-h-screen">
         Error: {error}
       </div>
     );
-  }
 
   return <FhirContext.Provider value={value}>{children}</FhirContext.Provider>;
 }
 
 export function useFhirClient() {
-  const context = useContext(FhirContext);
-  if (!context) {
-    throw new Error("useFhirClient must be used within a FhirClientProvider");
-  }
-  return context;
+  const ctx = useContext(FhirContext);
+  if (!ctx)
+    throw new Error("useFhirClient must be used inside FhirClientProvider");
+  return ctx;
+}
+
+// ---------------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------------
+function humanName(name?: any): string {
+  if (!name) return "";
+  return [name.given?.join(" "), name.family].filter(Boolean).join(" ").trim();
 }
