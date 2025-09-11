@@ -1,3 +1,4 @@
+// chat/layout.tsx
 "use client";
 import { Sidebar } from "@/components/sidebar";
 import { useState, useEffect } from "react";

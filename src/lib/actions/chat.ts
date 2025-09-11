@@ -266,7 +266,6 @@ export async function updateChatTitle({
 // lib/actions/chats.ts (relevant functions with fixes)
 
 export async function getUserChats(practitionerId: string) {
-  console.log("backend", practitionerId);
   const user = await db
     .select()
     .from(users)

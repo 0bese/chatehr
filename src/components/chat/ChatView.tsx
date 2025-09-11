@@ -1,15 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
-import { ChatContainerRoot, ChatContainerContent } from "@/components/prompt-kit/chat-container";
+import {
+  ChatContainerRoot,
+  ChatContainerContent,
+} from "@/components/prompt-kit/chat-container";
 import { EmptyState } from "./EmptyState";
 import { MessageComponent } from "./Message";
 import { LoadingMessage } from "./LoadingMessage";
 import { ErrorMessage } from "./ErrorMessage";
 import { ChatInput } from "./ChatInput";
+import { usePathname, useRouter } from "next/navigation";
+
+declare module "ai" {
+  interface MessageMetadata {
+    chatId?: string;
+    // add anything else you plan to send
+  }
+}
 
 // Helper function to convert files to data URLs for multimodal messages
 async function convertFilesToDataURLs(
@@ -55,12 +66,22 @@ export function ChatView({
   const [files, setFiles] = useState<{ file: File; base64: string | null }[]>(
     []
   );
-  const [selectedModel, setSelectedModel] = useState("Gemini 1.5 Flash");
+  const router = useRouter();
+  const [selectedModel, setSelectedModel] = useState("Gemini .5 Flash");
   const [hideToolCall, setHideToolCall] = useState(false);
 
   const { messages, sendMessage, status, error, regenerate } = useChat({
     id,
     messages: initialMessages,
+    onData: (response) => {
+      if (id === "new") {
+        console.log("onData response: ", response);
+        // const newChatId = response.data.headers.get("X-Chat-Id");
+        // if (newChatId) {
+        //   router.push(`/chat/${newChatId}`);
+        // }
+      }
+    },
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest({ messages, id }) {
@@ -114,6 +135,23 @@ export function ChatView({
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const pathname = usePathname();
+  const hasReplaced = useRef(false);
+
+  useEffect(() => {
+    if (hasReplaced.current) return;
+    // only redirect when we are on /chat/new
+    const isNewRoute = pathname === "/chat/new";
+
+    const assistantMsg = messages.find((m) => m.role === "assistant") as
+      | UIMessage<{ chatId?: string }>
+      | undefined;
+
+    if (assistantMsg?.metadata?.chatId) {
+      router.replace(`/chat/${assistantMsg.metadata.chatId}`);
+    }
+  }, [messages, pathname, router]);
+
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
       <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
@@ -122,6 +160,7 @@ export function ChatView({
 
           {messages?.map((message, index) => {
             const isLastMessage = index === messages.length - 1;
+            console.log("message", JSON.stringify(messages, null, 2));
             return (
               <MessageComponent
                 key={message.id}

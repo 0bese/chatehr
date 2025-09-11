@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { createChat } from "@/lib/actions/chat";
 import { getCurrentUser } from "@/lib/auth";
+import { generateId } from "ai";
 
 /**
  * Server component that handles the creation of new chats
@@ -17,7 +18,8 @@ export default async function NewChatPage() {
       redirect("/launch");
     }
     // Create a new chat and get the generated ID
-    chatId = await createChat({ practitionerId: user.practitionerId });
+    chatId = generateId();
+    // chatId = await createChat({ practitionerId: user.practitionerId });
   } catch (error) {
     console.error("Failed to create new chat:", error);
     throw new Error("Failed to create new chat session");

@@ -14,6 +14,7 @@ import type { UIMessage, UIMessagePart } from "ai";
 import { Check, Copy, RefreshCcw } from "lucide-react";
 import { memo, useState } from "react";
 import { Image } from "@/components/prompt-kit/image";
+import { Reasoning } from "@/components/ai-elements/reasoning";
 
 type MessageComponentProps = {
   message: UIMessage;
@@ -50,12 +51,6 @@ export const MessageComponent = memo(
       setTimeout(() => setCopied(false), 2000);
     };
 
-    const toolCallParts = message.parts.filter(
-      (part: any) =>
-        (part.type && part.type.startsWith("tool-")) ||
-        (part.type && part.type.startsWith("dynamic-tool"))
-    );
-
     return (
       <Message
         className={cn(
@@ -65,22 +60,35 @@ export const MessageComponent = memo(
       >
         {isAssistant ? (
           <div className="group flex w-full flex-col gap-0 space-y-2">
-            {!hideToolCall && toolCallParts.length > 0 && (
-              <div className="w-full">
-                {toolCallParts.map((part: any, index: number) =>
-                  renderToolPart(part, index)
-                )}
-              </div>
-            )}
-            <MessageContent
-              className="text-foreground prose w-full min-w-0 flex-1 rounded-lg bg-transparent p-0 space-y-4"
-              markdown
-            >
-              {message?.parts
-                .filter((part: any) => part.type === "text")
-                .map((part: any) => part.text)
-                .join("")}
-            </MessageContent>
+            {message.parts.map((part: any, index: number) => {
+              console.log(message);
+              switch (part.type) {
+                case "text":
+                  return (
+                    <MessageContent
+                      key={index}
+                      className="text-foreground prose w-full min-w-0 flex-1 rounded-lg bg-transparent p-0 space-y-4"
+                      markdown
+                    >
+                      {part.text}
+                    </MessageContent>
+                  );
+                case "reasoning":
+                  console.log(message);
+                  return (
+                    <Reasoning key={index}>{part.content as any}</Reasoning>
+                  );
+                default:
+                  if (
+                    !hideToolCall &&
+                    (part.type?.startsWith("tool-") ||
+                      part.type === "dynamic-tool")
+                  ) {
+                    return renderToolPart(part, index);
+                  }
+                  return null;
+              }
+            })}
 
             <MessageActions
               className={cn(
@@ -155,7 +163,7 @@ export const MessageComponent = memo(
                   "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
                 )}
               >
-                <MessageAction tooltip="Edit" delayDuration={100}>
+                {/* <MessageAction tooltip="Edit" delayDuration={100}>
                   <Button
                     variant="ghost"
                     onClick={handleCopy}
@@ -168,7 +176,7 @@ export const MessageComponent = memo(
                       <Copy className="h-4 w-4" />
                     )}
                   </Button>
-                </MessageAction>
+                </MessageAction> */}
                 <MessageAction tooltip="Copy" delayDuration={100}>
                   <Button
                     variant="ghost"
