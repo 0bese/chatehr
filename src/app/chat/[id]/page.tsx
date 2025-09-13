@@ -11,9 +11,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   }
   const messages = await loadChat({ id, practitionerId: user.practitionerId });
 
-  if (id !== "new" && messages.length == 0) {
-    return <div> Chat not found </div>;
-  }
+  // if (id !== "new" && messages.length == 0) {
+  //   return <div> Chat not found </div>;
+  // }
 
   return <ChatView id={id} initialMessages={id == "new" ? [] : messages} />;
 }

@@ -40,13 +40,6 @@ export const maxDuration = 30;
 // const toools = await client.getTools();
 // console.log(toools);
 // const aiTools = Object.assign({}, ...toools.map(convertMCPToolToAiTool));
-// getInformation: tool({
-//   description: `get information from your knowledge base to answer personal  questions.`,
-//   inputSchema: z.object({
-//     question: z.string().describe("the users question"),
-//   }),
-//   execute: async ({ question }) => findRelevantContent(question),
-// });
 
 // const tools = {
 //   ...aiTools,
@@ -124,6 +117,15 @@ export async function POST(req: NextRequest) {
     const result = streamText({
       model: google("gemini-2.5-flash"),
       messages: modelMessages,
+      tools: {
+        getInformation: tool({
+          description: `get information from your knowledge base to answer questions related to health. USE THE INFORMATION FROM THE KNOWLEDGE BASE. `,
+          inputSchema: z.object({
+            question: z.string().describe("the users question"),
+          }),
+          execute: async ({ question }) => findRelevantContent(question),
+        }),
+      },
       // tools,
       stopWhen: stepCountIs(10),
       experimental_transform: smoothStream({
@@ -147,10 +149,11 @@ export async function POST(req: NextRequest) {
       sendReasoning: true,
       sendSources: true,
       onFinish: async ({ messages: updatedMessages }) => {
+        const fullMessages = [...messages, ...updatedMessages];
         await saveChat({
           chatId,
           practitionerId: user.practitionerId,
-          messages: updatedMessages,
+          messages: fullMessages,
         });
       },
       //  await mcpClient.close();

@@ -14,11 +14,16 @@ import type { UIMessage, UIMessagePart } from "ai";
 import { Check, Copy, RefreshCcw } from "lucide-react";
 import { memo, useState } from "react";
 import { Image } from "@/components/prompt-kit/image";
-import { Reasoning } from "@/components/ai-elements/reasoning";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "../prompt-kit/reasoning";
 
 type MessageComponentProps = {
   message: UIMessage;
   isLastMessage: boolean;
+  showActions: boolean;
   hideToolCall: boolean;
   regenerate: () => void;
 };
@@ -36,6 +41,7 @@ export const MessageComponent = memo(
   ({
     message,
     isLastMessage,
+    showActions,
     hideToolCall,
     regenerate,
   }: MessageComponentProps) => {
@@ -61,7 +67,6 @@ export const MessageComponent = memo(
         {isAssistant ? (
           <div className="group flex w-full flex-col gap-0 space-y-2">
             {message.parts.map((part: any, index: number) => {
-              console.log(message);
               switch (part.type) {
                 case "text":
                   return (
@@ -74,9 +79,18 @@ export const MessageComponent = memo(
                     </MessageContent>
                   );
                 case "reasoning":
-                  console.log(message);
                   return (
-                    <Reasoning key={index}>{part.content as any}</Reasoning>
+                    <Reasoning key={index}>
+                      <ReasoningTrigger className="text-sm text-secondary-foreground">
+                        Show AI reasoning
+                      </ReasoningTrigger>
+                      <ReasoningContent
+                        markdown
+                        className="ml-2 mt-2 border-l-2 border-l-slate-200 px-2 pb-1 dark:border-l-slate-700 text-sm"
+                      >
+                        {part.text}
+                      </ReasoningContent>
+                    </Reasoning>
                   );
                 default:
                   if (
@@ -90,31 +104,33 @@ export const MessageComponent = memo(
               }
             })}
 
-            <MessageActions
-              className={cn(
-                "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
-                isLastMessage && "opacity-100"
-              )}
-            >
-              <MessageAction tooltip="Copy" delayDuration={100}>
-                <Button variant="ghost" onClick={handleCopy} size="icon">
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </MessageAction>
-              <MessageAction tooltip="Regenerate" delayDuration={100}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => regenerate()}
-                >
-                  <RefreshCcw />
-                </Button>
-              </MessageAction>
-            </MessageActions>
+            {showActions && (
+              <MessageActions
+                className={cn(
+                  "-ml-2.5 flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                  isLastMessage && "opacity-100"
+                )}
+              >
+                <MessageAction tooltip="Copy" delayDuration={100}>
+                  <Button variant="ghost" onClick={handleCopy} size="icon">
+                    {copied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </MessageAction>
+                <MessageAction tooltip="Regenerate" delayDuration={100}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => regenerate()}
+                  >
+                    <RefreshCcw />
+                  </Button>
+                </MessageAction>
+              </MessageActions>
+            )}
           </div>
         ) : (
           <>
@@ -158,40 +174,28 @@ export const MessageComponent = memo(
                     </MessageContent>
                   ))}
               </div>
-              <MessageActions
-                className={cn(
-                  "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                )}
-              >
-                {/* <MessageAction tooltip="Edit" delayDuration={100}>
-                  <Button
-                    variant="ghost"
-                    onClick={handleCopy}
-                    size="icon"
-                    className=""
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </MessageAction> */}
-                <MessageAction tooltip="Copy" delayDuration={100}>
-                  <Button
-                    variant="ghost"
-                    onClick={handleCopy}
-                    size="icon"
-                    className=""
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </MessageAction>
-              </MessageActions>
+              {showActions && (
+                <MessageActions
+                  className={cn(
+                    "flex gap-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                  )}
+                >
+                  <MessageAction tooltip="Copy" delayDuration={100}>
+                    <Button
+                      variant="ghost"
+                      onClick={handleCopy}
+                      size="icon"
+                      className=""
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </MessageAction>
+                </MessageActions>
+              )}
             </div>
           </>
         )}

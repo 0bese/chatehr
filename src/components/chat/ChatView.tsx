@@ -58,6 +58,18 @@ async function convertFilesToDataURLs(
   );
 }
 
+// put this at the top of the file (after the imports)
+function hasMessageContent(msg: UIMessage): boolean {
+  if (!msg.parts) return false;
+  return msg.parts.some(
+    (p) =>
+      (p.type === "text" && p.text.trim().length > 0) ||
+      p.type === "reasoning" ||
+      p.type.startsWith("tool-") ||
+      p.type === "dynamic-tool"
+  );
+}
+
 export function ChatView({
   id,
   initialMessages,
@@ -66,22 +78,12 @@ export function ChatView({
   const [files, setFiles] = useState<{ file: File; base64: string | null }[]>(
     []
   );
-  const router = useRouter();
-  const [selectedModel, setSelectedModel] = useState("Gemini .5 Flash");
+  const [selectedModel, setSelectedModel] = useState("kimi-K2");
   const [hideToolCall, setHideToolCall] = useState(false);
 
   const { messages, sendMessage, status, error, regenerate } = useChat({
     id,
     messages: initialMessages,
-    onData: (response) => {
-      if (id === "new") {
-        console.log("onData response: ", response);
-        // const newChatId = response.data.headers.get("X-Chat-Id");
-        // if (newChatId) {
-        //   router.push(`/chat/${newChatId}`);
-        // }
-      }
-    },
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest({ messages, id }) {
@@ -91,6 +93,24 @@ export function ChatView({
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+
+  // Check if the last message is from assistant and has any content
+  const lastMessage = messages[messages.length - 1];
+  const isLastMessageAssistant = lastMessage?.role === "assistant";
+  const hasAssistantContent =
+    isLastMessageAssistant &&
+    lastMessage?.parts &&
+    lastMessage.parts.length > 0 &&
+    lastMessage.parts.some(
+      (part) =>
+        (part.type === "text" && part.text.trim().length > 0) ||
+        part.type === "reasoning" ||
+        part.type?.startsWith("tool-") ||
+        part.type === "dynamic-tool"
+    );
+
+  // Show loading only if we're loading AND there's no assistant content yet
+  const shouldShowLoading = isLoading && !hasAssistantContent;
 
   const handleFilesAdded = (newFiles: File[]) => {
     newFiles.forEach((file) => {
@@ -135,23 +155,6 @@ export function ChatView({
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const pathname = usePathname();
-  const hasReplaced = useRef(false);
-
-  useEffect(() => {
-    if (hasReplaced.current) return;
-    // only redirect when we are on /chat/new
-    const isNewRoute = pathname === "/chat/new";
-
-    const assistantMsg = messages.find((m) => m.role === "assistant") as
-      | UIMessage<{ chatId?: string }>
-      | undefined;
-
-    if (assistantMsg?.metadata?.chatId) {
-      router.replace(`/chat/${assistantMsg.metadata.chatId}`);
-    }
-  }, [messages, pathname, router]);
-
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
       <ChatContainerRoot className="relative flex-1 space-y-0 overflow-y-auto">
@@ -160,19 +163,22 @@ export function ChatView({
 
           {messages?.map((message, index) => {
             const isLastMessage = index === messages.length - 1;
-            console.log("message", JSON.stringify(messages, null, 2));
+            const showActions =
+              hasMessageContent(message) &&
+              (isLastMessage || message.role === "user");
             return (
               <MessageComponent
                 key={message.id}
                 message={message}
                 isLastMessage={isLastMessage}
+                showActions={showActions}
                 hideToolCall={hideToolCall}
                 regenerate={() => regenerate()}
               />
             );
           })}
 
-          {isLoading && <LoadingMessage />}
+          {shouldShowLoading && <LoadingMessage />}
           {status === "error" && error && <ErrorMessage error={error} />}
         </ChatContainerContent>
 

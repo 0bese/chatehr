@@ -217,7 +217,7 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
           New Chat
         </Link>
         <Link
-          href="#"
+          href="/collections"
           className="flex items-center gap-2 p-2 hover:bg-gray-200 dark:hover:bg-[#2F2F31] rounded-md transition-colors"
         >
           Collections
