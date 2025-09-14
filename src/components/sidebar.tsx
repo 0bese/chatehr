@@ -6,13 +6,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Pin, Search, Trash2, Plus } from "lucide-react";
 import { Input } from "./ui/input";
-import { InferSelectModel } from "drizzle-orm";
-import { chats } from "@/lib/db/schema/chat";
-import {
-  deleteChatAction,
-  fetchUserChats,
-  togglePinChatAction,
-} from "@/lib/actions/chat-actions";
 import { Button } from "./ui/button";
 import {
   AlertDialog,
@@ -25,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
+import { useChatHistory } from "@/hooks/useChatHistory";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -42,7 +36,7 @@ const ChatItem = React.memo(
     onPin,
     onDelete,
   }: {
-    chat: InferSelectModel<typeof chats>;
+    chat: any; // Will be typed from useChatHistory
     isActive: boolean;
     isDeleting: boolean;
     onPin: (id: string) => void;
@@ -127,68 +121,25 @@ ChatItem.displayName = "ChatItem";
 /* provider component                                                 */
 /* ------------------------------------------------------------------ */
 export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
-  const [chatHistory, setChatHistory] = React.useState<
-    InferSelectModel<typeof chats>[]
-  >([]);
-  const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [deletingChatId, setDeletingChatId] = React.useState<string | null>(
-    null
-  );
+
+  // Use React Query for chat history management
+  const {
+    chats,
+    isLoading,
+    isFetching,
+    error,
+    pinChat,
+    isPinning,
+    deleteChat,
+    isDeleting
+  } = useChatHistory();
 
   /* -------------------------------------------------------------- */
-  /* only load when the component mounts – not on every route change */
-  /* -------------------------------------------------------------- */
-  React.useEffect(() => {
-    let stale = false;
-
-    (async () => {
-      try {
-        setLoading(true);
-        const result = await fetchUserChats();
-        if (stale) return;
-
-        if (result.success && result.data) setChatHistory(result.data);
-        else {
-          console.error("Failed to fetch chats:", result.error);
-          setChatHistory([]);
-        }
-      } catch (e) {
-        console.error("Error loading chats:", e);
-        setChatHistory([]);
-      } finally {
-        if (!stale) setLoading(false);
-      }
-    })();
-
-    return () => {
-      stale = true;
-    };
-  }, []);
-
-  const handleDelete = React.useCallback(async (chatId: string) => {
-    setDeletingChatId(chatId);
-    const result = await deleteChatAction(chatId);
-    if (result.success)
-      setChatHistory((prev) => prev.filter((c) => c.id !== chatId));
-    else console.error("Failed to delete chat:", result.error);
-    setDeletingChatId(null);
-  }, []);
-
-  const handlePin = React.useCallback(async (chatId: string) => {
-    const result = await togglePinChatAction(chatId);
-    if (result.success)
-      setChatHistory((prev) =>
-        prev.map((c) => (c.id === chatId ? { ...c, pinned: !c.pinned } : c))
-      );
-    else console.error("Failed to pin chat:", result.error);
-  }, []);
-
-  /* -------------------------------------------------------------- */
-  /* memoised derived data – new array only when chatHistory changes */
+  /* memoised derived data – new array only when chats changes */
   /* -------------------------------------------------------------- */
   const { pinned, unpinned } = React.useMemo(() => {
-    const filtered = chatHistory.filter((c) =>
+    const filtered = chats.filter((c) =>
       (c.title || "Untitled Chat")
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
@@ -197,7 +148,12 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
       pinned: filtered.filter((c) => c.pinned),
       unpinned: filtered.filter((c) => !c.pinned),
     };
-  }, [chatHistory, searchQuery]);
+  }, [chats, searchQuery]);
+
+  // Error state
+  if (error) {
+    console.error("Error loading chats:", error);
+  }
 
   if (collapsed) return null;
 
@@ -241,7 +197,7 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
           Chat History
         </h3>
 
-        {loading ? (
+        {isLoading ? (
           <div className="px-2 py-4 text-muted-foreground text-sm">
             Loading chats...
           </div>
@@ -262,9 +218,9 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
                       key={chat.id}
                       chat={chat}
                       isActive={currentChatId === chat.id}
-                      isDeleting={deletingChatId === chat.id}
-                      onPin={handlePin}
-                      onDelete={handleDelete}
+                      isDeleting={isDeleting}
+                      onPin={pinChat}
+                      onDelete={deleteChat}
                     />
                   ))}
                 </ul>
@@ -278,9 +234,9 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
                     key={chat.id}
                     chat={chat}
                     isActive={currentChatId === chat.id}
-                    isDeleting={deletingChatId === chat.id}
-                    onPin={handlePin}
-                    onDelete={handleDelete}
+                    isDeleting={isDeleting}
+                    onPin={pinChat}
+                    onDelete={deleteChat}
                   />
                 ))}
               </ul>
