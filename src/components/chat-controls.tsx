@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 type ChatControlsProps = {
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
-  // hasActiveConversation: boolean;
-  // createNewChat: () => void;
 };
 
 export function ChatControls({
@@ -43,7 +41,7 @@ export function ChatControls({
             >
               <Plus className="w-5 h-5" />
             </Button>
-          </> 
+          </>
         )}
       </div>
     </div>

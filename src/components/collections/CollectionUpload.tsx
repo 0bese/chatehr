@@ -2,7 +2,13 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { AlertCircle, Upload, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +17,10 @@ interface CollectionUploadProps {
   onCancel: () => void;
 }
 
-export function CollectionUpload({ onSuccess, onCancel }: CollectionUploadProps) {
+export function CollectionUpload({
+  onSuccess,
+  onCancel,
+}: CollectionUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -42,23 +51,39 @@ export function CollectionUpload({ onSuccess, onCancel }: CollectionUploadProps)
   const handleFile = (file: File) => {
     setError(null);
 
-    // Validate file type
+    // Validate file type - more comprehensive check
+    const validExtensions = [".txt", ".md", ".pdf", ".json", ".csv"];
+    const fileExtension = file.name
+      .toLowerCase()
+      .substring(file.name.lastIndexOf("."));
+
     const validTypes = [
-      'text/plain',
-      'text/markdown',
-      'application/pdf',
-      'application/json',
-      'text/csv'
+      "text/plain",
+      "text/markdown",
+      "application/pdf",
+      "application/json",
+      "text/csv",
     ];
 
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
-      setError('Please upload a text file, PDF, or JSON file.');
+    const isValidType =
+      validTypes.includes(file.type) || validExtensions.includes(fileExtension);
+
+    if (!isValidType) {
+      setError(
+        "Please upload a text file (.txt), markdown (.md), PDF (.pdf), JSON (.json), or CSV (.csv) file."
+      );
       return;
     }
 
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB.');
+      setError("File size must be less than 10MB.");
+      return;
+    }
+
+    // Validate file size (minimum size)
+    if (file.size === 0) {
+      setError("File cannot be empty.");
       return;
     }
 
@@ -79,54 +104,32 @@ export function CollectionUpload({ onSuccess, onCancel }: CollectionUploadProps)
     setError(null);
 
     try {
-      const content = await readFileContent(selectedFile);
+      // Create FormData to send the file
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('filename', selectedFile.name);
 
-      const response = await fetch('/api/collections', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content,
-          filename: selectedFile.name,
-        }),
+      const response = await fetch("/api/collections", {
+        method: "POST",
+        body: formData,
       });
 
       if (response.ok) {
         onSuccess();
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to upload collection');
+        setError(errorData.error || "Failed to upload collection");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload collection');
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to upload collection";
+      setError(errorMessage);
+      console.error("Upload error:", err);
     } finally {
       setUploading(false);
     }
   };
 
-  const readFileContent = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        resolve(content);
-      };
-
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'));
-      };
-
-      if (file.type === 'application/pdf') {
-        // For PDFs, we'll extract text on the server side
-        // For now, send a placeholder that indicates it's a PDF
-        resolve(`[PDF_FILE:${file.name}]`);
-      } else {
-        reader.readAsText(file);
-      }
-    });
-  };
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -192,7 +195,9 @@ export function CollectionUpload({ onSuccess, onCancel }: CollectionUploadProps)
           ) : (
             <div className="space-y-2">
               <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
-              <p className="font-medium">Drop your file here or click to browse</p>
+              <p className="font-medium">
+                Drop your file here or click to browse
+              </p>
               <p className="text-sm text-muted-foreground">
                 Supports TXT, MD, PDF, JSON, and CSV files up to 10MB
               </p>
@@ -208,17 +213,10 @@ export function CollectionUpload({ onSuccess, onCancel }: CollectionUploadProps)
         )}
 
         <div className="flex gap-3 justify-end">
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={uploading}
-          >
+          <Button variant="outline" onClick={onCancel} disabled={uploading}>
             Cancel
           </Button>
-          <Button
-            onClick={handleUpload}
-            disabled={!selectedFile || uploading}
-          >
+          <Button onClick={handleUpload} disabled={!selectedFile || uploading}>
             {uploading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

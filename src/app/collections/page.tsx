@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/sidebar";
 import { CollectionsList } from "@/components/collections/CollectionsList";
 import { CollectionUpload } from "@/components/collections/CollectionUpload";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, PanelLeft } from "lucide-react";
 
 export default function CollectionsPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -14,7 +14,7 @@ export default function CollectionsPage() {
 
   const handleUploadSuccess = () => {
     setShowUpload(false);
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   return (
@@ -28,7 +28,7 @@ export default function CollectionsPage() {
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
-              ☰
+              <PanelLeft />
             </Button>
             <h1 className="text-xl font-semibold">Collections</h1>
           </div>
