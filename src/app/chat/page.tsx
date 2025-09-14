@@ -1,8 +1,8 @@
 // app/chat/page.tsx
 import { redirect } from "next/navigation";
-import { createChat } from "@/lib/actions/chat";
+import { createNewChat } from "@/lib/actions/chat-actions";
 import { getCurrentUser } from "@/lib/auth";
-import { generateId } from "ai";
+import { ClientRedirect } from "@/components/ClientRedirect";
 
 /**
  * Server component that handles the creation of new chats
@@ -10,24 +10,35 @@ import { generateId } from "ai";
  * and redirects them to the specific chat URL
  */
 export default async function NewChatPage() {
-  let chatId: string;
+  const user = await getCurrentUser();
+  console.log("NewChatPage - Current user:", user);
 
-  try {
-    const user = await getCurrentUser();
-    if (!user?.practitionerId) {
-      redirect("/launch");
-    }
-    // Create a new chat and get the generated ID
-    chatId = generateId();
-    // chatId = await createChat({ practitionerId: user.practitionerId });
-  } catch (error) {
-    console.error("Failed to create new chat:", error);
-    throw new Error("Failed to create new chat session");
+  if (!user?.practitionerId) {
+    console.log(
+      "NewChatPage - No user or practitionerId, redirecting to /launch"
+    );
+    redirect("/launch");
   }
 
-  // Redirect to the specific chat page with the new ID
-  // redirect() throws internally to perform the redirect - this is expected
-  redirect(`/chat/${chatId}`);
+  console.log(
+    "NewChatPage - Creating new chat for practitioner:",
+    user.practitionerId
+  );
+
+  // Create a new chat using server action
+  const result = await createNewChat("New Chat");
+  console.log("NewChatPage - Chat creation result:", result);
+
+  if (!result.success || !result.chatId) {
+    console.error("Failed to create chat:", result.error);
+    redirect("/error?message=Failed to create chat session");
+  }
+
+  console.log("NewChatPage - Redirecting to /chat/" + result.chatId);
+
+  // Return client-side redirect component instead of server redirect
+  // This avoids the NEXT_REDIRECT error and provides better UX
+  return <ClientRedirect url={`/chat/${result.chatId}`} />;
 }
 
 /**

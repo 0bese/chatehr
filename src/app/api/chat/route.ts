@@ -91,10 +91,28 @@ export async function POST(req: NextRequest) {
     });
 
     if (!chatExists) {
-      chatId = await createChat({
-        practitionerId: user.practitionerId,
-        title: "New Chat",
-      });
+      try {
+        // Create new chat with proper error handling
+        const newChatId = await createChat({
+          practitionerId: user.practitionerId,
+          title: "New Chat",
+        });
+
+        if (newChatId) {
+          chatId = newChatId;
+        } else {
+          throw new Error("Failed to create chat");
+        }
+      } catch (error) {
+        console.error("Error creating chat:", error);
+        return new Response(
+          JSON.stringify({ error: "Failed to create chat. Please try again." }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
     }
 
     // Load previous messages

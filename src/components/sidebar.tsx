@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 import { useChatHistory } from "@/hooks/useChatHistory";
+import { useChatCreation } from "@/hooks/useChatCreation";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -132,8 +133,11 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
     pinChat,
     isPinning,
     deleteChat,
-    isDeleting
+    isDeleting,
   } = useChatHistory();
+
+  // Use React Query for chat creation
+  const { mutate: createChat, isPending: isCreatingChat } = useChatCreation();
 
   /* -------------------------------------------------------------- */
   /* memoised derived data – new array only when chats changes */
@@ -165,13 +169,24 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="mt-4 space-y-2">
-        <Link
-          href="/chat"
-          className="flex items-center gap-2 p-2 hover:bg-gray-200 dark:hover:bg-[#2F2F31] rounded-md transition-colors"
+        <Button
+          onClick={() => createChat("New chat")}
+          disabled={isCreatingChat}
+          variant="ghost"
+          className="w-full justify-start flex items-center gap-2 p-2 hover:bg-gray-200 dark:hover:bg-[#2F2F31] rounded-md transition-colors h-auto font-normal"
         >
-          <Plus className="w-4 h-4" />
-          New Chat
-        </Link>
+          {isCreatingChat ? (
+            <>
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              New Chat
+            </>
+          )}
+        </Button>
         <Link
           href="/collections"
           className="flex items-center gap-2 p-2 hover:bg-gray-200 dark:hover:bg-[#2F2F31] rounded-md transition-colors"

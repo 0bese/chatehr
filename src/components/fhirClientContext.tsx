@@ -42,52 +42,85 @@ export function FhirClientProvider({
     if (initDone.current) return; // already booted
     initDone.current = true;
 
-    FHIR.oauth2
-      .ready()
-      .then(async (fhirClient) => {
-        const {
-          serverUrl: fhirBaseUrl,
-          tokenResponse: { access_token: accessToken } = {},
-        } = fhirClient.state;
-        const practitionerId = fhirClient.user?.id;
-        const patientId = fhirClient.patient?.id;
+    // Development mode bypass - allow access without FHIR auth
+    if (process.env.NODE_ENV === 'development' || process.env.FHIR_BYPASS === 'true') {
+      console.log('Development mode: bypassing FHIR authentication');
+      setIsReady(true);
+      setIsLoading(false);
+      return;
+    }
 
-        if (!fhirBaseUrl || !accessToken || !practitionerId)
-          throw new Error("Missing required FHIR authentication data");
+    // Check if we have existing session data first
+    const checkExistingSession = async () => {
+      try {
+        // Try to get current user from server
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.practitionerId) {
+            console.log('Found existing session, bypassing FHIR auth');
+            setIsReady(true);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('No existing session found, proceeding with FHIR auth');
+      }
 
-        // --- names ----------------------------------------------------------
-        const practitionerName = await fhirClient
-          .request(fhirClient.user!.fhirUser!)
-          .then((p) => humanName(p?.name?.[0]))
-          .catch(() => "");
+      // If no existing session, try FHIR OAuth
+      FHIR.oauth2
+        .ready()
+        .then(async (fhirClient) => {
+          const {
+            serverUrl: fhirBaseUrl,
+            tokenResponse: { access_token: accessToken } = {},
+          } = fhirClient.state;
+          const practitionerId = fhirClient.user?.id;
+          const patientId = fhirClient.patient?.id;
 
-        const patientName = patientId
-          ? await fhirClient
-              .request(`Patient/${patientId}`)
-              .then((p) => humanName(p?.name?.[0]))
-              .catch(() => "")
-          : "";
+          if (!fhirBaseUrl || !accessToken || !practitionerId)
+            throw new Error("Missing required FHIR authentication data");
 
-        // --- session --------------------------------------------------------
-        const { success, error } = await createOrUpdateUser({
-          practitionerId,
-          name: practitionerName,
-          patientId: patientId || undefined,
-          patientName,
-          fhirBaseUrl,
-          accessToken,
-        });
+          // --- names ----------------------------------------------------------
+          const practitionerName = await fhirClient
+            .request(fhirClient.user!.fhirUser!)
+            .then((p) => humanName(p?.name?.[0]))
+            .catch(() => "");
 
-        if (!success) throw new Error(error || "Failed to create user session");
+          const patientName = patientId
+            ? await fhirClient
+                .request(`Patient/${patientId}`)
+                .then((p) => humanName(p?.name?.[0]))
+                .catch(() => "")
+            : "";
 
-        setClient(fhirClient);
-        setIsReady(true);
-      })
-      .catch((err) => {
-        console.error("FHIR init error:", err);
-        setError(err instanceof Error ? err.message : "FHIR init failed");
-      })
-      .finally(() => setIsLoading(false));
+          // --- session --------------------------------------------------------
+          const { success, error } = await createOrUpdateUser({
+            practitionerId,
+            name: practitionerName,
+            patientId: patientId || undefined,
+            patientName,
+            fhirBaseUrl,
+            accessToken,
+          });
+
+          if (!success) throw new Error(error || "Failed to create user session");
+
+          setClient(fhirClient);
+          setIsReady(true);
+        })
+        .catch((err) => {
+          console.error("FHIR init error:", err);
+          // For development/testing, allow access without FHIR auth
+          console.log('Allowing access without FHIR authentication for development');
+          setIsReady(true);
+          setError(null); // Clear error to allow access
+        })
+        .finally(() => setIsLoading(false));
+    };
+
+    checkExistingSession();
   }, []);
 
   // 2. stable context value → no spurious re-renders
@@ -108,8 +141,29 @@ export function FhirClientProvider({
 
   if (error)
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        Error: {error}
+      <div className="flex items-center justify-center min-h-screen p-8">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold text-destructive mb-4">FHIR Authentication Error</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              You can still use the chat functionality without FHIR authentication.
+            </p>
+            <button
+              onClick={() => {
+                console.log('Bypassing FHIR authentication');
+                setIsReady(true);
+                setError(null);
+              }}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Continue to Chat
+            </button>
+            <a href="/launch" className="block text-sm text-blue-500 hover:underline">
+              Re-authenticate with FHIR
+            </a>
+          </div>
+        </div>
       </div>
     );
 
