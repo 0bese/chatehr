@@ -159,16 +159,31 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
     console.error("Error loading chats:", error);
   }
 
-  if (collapsed) return null;
-
   return (
-    <div className="w-64 h-screen p-2 overflow-hidden bg-background">
-      <div className="flex items-center justify-between h-14 px-2">
-        <h2 className=" ml-14 text-xl font-semibold">ChatEHR</h2>
+    <div
+      className={cn(
+        "h-screen p-2 overflow-hidden bg-background transition-all duration-300 ease-in-out",
+        collapsed
+          ? "w-0 opacity-0 p-0  translate-x-[-100%]"
+          : "w-64 opacity-100 translate-x-0"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-between h-14 px-2 transition-all duration-300",
+          collapsed ? "opacity-0" : "opacity-100"
+        )}
+      >
+        <h2 className="ml-14 text-xl font-semibold">ChatEHR</h2>
       </div>
 
       {/* Navigation */}
-      <nav className="mt-4 space-y-2">
+      <nav
+        className={cn(
+          "mt-4 space-y-2 transition-all duration-300",
+          collapsed ? "opacity-0" : "opacity-100"
+        )}
+      >
         <Button
           onClick={() => createChat("New chat")}
           disabled={isCreatingChat}
@@ -207,8 +222,20 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
         </div>
       </nav>
 
-      <div className="mt-6 flex-1 overflow-y-auto">
-        <h3 className="text-sm font-semibold text-muted-foreground px-2 mb-2">
+      <div
+        className={cn(
+          "mt-6 flex-1 overflow-y-auto transition-all duration-300",
+          collapsed ? "opacity-0" : "opacity-100"
+        )}
+      >
+        <h3
+          className={cn(
+            "text-sm font-semibold text-muted-foreground px-2 mb-2 transition-all duration-300",
+            collapsed
+              ? "translate-y-[-10px] opacity-0"
+              : "translate-y-0 opacity-100"
+          )}
+        >
           Chat History
         </h3>
 
@@ -228,15 +255,25 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
                   📌 Pinned
                 </h4>
                 <ul className="space-y-1">
-                  {pinned.map((chat) => (
-                    <ChatItem
+                  {pinned.map((chat, index) => (
+                    <div
                       key={chat.id}
-                      chat={chat}
-                      isActive={currentChatId === chat.id}
-                      isDeleting={isDeleting}
-                      onPin={pinChat}
-                      onDelete={deleteChat}
-                    />
+                      className={cn(
+                        "transition-all duration-300 ease-in-out",
+                        collapsed
+                          ? "opacity-0 translate-x-[-10px]"
+                          : "opacity-100 translate-x-0"
+                      )}
+                      style={{ transitionDelay: `${index * 50}ms` }}
+                    >
+                      <ChatItem
+                        chat={chat}
+                        isActive={currentChatId === chat.id}
+                        isDeleting={isDeleting}
+                        onPin={pinChat}
+                        onDelete={deleteChat}
+                      />
+                    </div>
                   ))}
                 </ul>
               </div>
@@ -244,15 +281,27 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
 
             {unpinned.length > 0 && (
               <ul className="space-y-1">
-                {unpinned.map((chat) => (
-                  <ChatItem
+                {unpinned.map((chat, index) => (
+                  <div
                     key={chat.id}
-                    chat={chat}
-                    isActive={currentChatId === chat.id}
-                    isDeleting={isDeleting}
-                    onPin={pinChat}
-                    onDelete={deleteChat}
-                  />
+                    className={cn(
+                      "transition-all duration-300 ease-in-out",
+                      collapsed
+                        ? "opacity-0 translate-x-[-10px]"
+                        : "opacity-100 translate-x-0"
+                    )}
+                    style={{
+                      transitionDelay: `${(pinned.length + index) * 50}ms`,
+                    }}
+                  >
+                    <ChatItem
+                      chat={chat}
+                      isActive={currentChatId === chat.id}
+                      isDeleting={isDeleting}
+                      onPin={pinChat}
+                      onDelete={deleteChat}
+                    />
+                  </div>
                 ))}
               </ul>
             )}
