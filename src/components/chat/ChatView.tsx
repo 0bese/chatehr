@@ -14,6 +14,7 @@ import { LoadingMessage } from "./LoadingMessage";
 import { ErrorMessage } from "./ErrorMessage";
 import { ChatInput } from "./ChatInput";
 import { usePathname, useRouter } from "next/navigation";
+import { useCurrentChatState } from "@/components/ChatStateContext";
 
 declare module "ai" {
   interface MessageMetadata {
@@ -80,6 +81,7 @@ export function ChatView({
   );
   const [selectedModel, setSelectedModel] = useState("kimi-K2");
   const [hideToolCall, setHideToolCall] = useState(false);
+  const { setMessageCount } = useCurrentChatState();
 
   const { messages, sendMessage, status, error, regenerate } = useChat({
     id,
@@ -93,6 +95,11 @@ export function ChatView({
   });
 
   const isLoading = status === "submitted" || status === "streaming";
+
+  // Update message count when messages change
+  useEffect(() => {
+    setMessageCount(messages.length);
+  }, [messages, setMessageCount]);
 
   // Check if the last message is from assistant and has any content
   const lastMessage = messages[messages.length - 1];

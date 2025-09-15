@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   fetchUserChats,
   deleteChatAction,
@@ -18,8 +20,10 @@ export const chatKeys = {
   detail: (id: string) => [...chatKeys.details(), id] as const,
 }
 
-export function useChatHistory() {
+export function useChatHistory(currentChatId?: string) {
   const queryClient = useQueryClient()
+  const router = useRouter()
+  const [isNavigatingAfterDelete, setIsNavigatingAfterDelete] = useState(false)
 
   // Query for fetching chats
   const { data, isLoading, error, isFetching } = useQuery({
@@ -75,7 +79,7 @@ export function useChatHistory() {
     },
   })
 
-  // Mutation for deleting chats
+  // Mutation for deleting chats with navigation logic
   const deleteMutation = useMutation({
     mutationFn: async (chatId: string) => {
       const result = await deleteChatAction(chatId)
@@ -105,6 +109,46 @@ export function useChatHistory() {
         queryClient.setQueryData(chatKeys.lists(), context.previousChats)
       }
     },
+    onSuccess: (result, deletedChatId) => {
+      // Handle navigation after successful deletion
+      if (currentChatId === deletedChatId) {
+        setIsNavigatingAfterDelete(true)
+
+        // Get remaining chats after deletion
+        const remainingChats = queryClient.getQueryData<Chat[]>(chatKeys.lists()) || []
+        const filteredChats = remainingChats.filter(chat => chat.id !== deletedChatId)
+
+        if (filteredChats.length > 0) {
+          // Prioritize navigation:
+          // 1. First pinned chat (most recent)
+          // 2. First unpinned chat (most recent)
+          // 3. Create new chat if none available
+          const pinnedChats = filteredChats.filter(chat => chat.pinned)
+          const unpinnedChats = filteredChats.filter(chat => !chat.pinned)
+
+          let targetChat: Chat | null = null
+
+          if (pinnedChats.length > 0) {
+            targetChat = pinnedChats[0] // Most recent pinned chat
+          } else if (unpinnedChats.length > 0) {
+            targetChat = unpinnedChats[0] // Most recent unpinned chat
+          }
+
+          if (targetChat) {
+            router.push(`/chat/${targetChat.id}`)
+          } else {
+            // Fallback: create new chat
+            router.push('/chat/new')
+          }
+        } else {
+          // No chats left, navigate to new chat
+          router.push('/chat/new')
+        }
+
+        // Reset navigation state after a short delay
+        setTimeout(() => setIsNavigatingAfterDelete(false), 1000)
+      }
+    },
     onSettled: () => {
       // Always refetch after error or success to ensure consistency
       queryClient.invalidateQueries({ queryKey: chatKeys.lists() })
@@ -122,7 +166,10 @@ export function useChatHistory() {
     pinChat: pinMutation.mutate,
     isPinning: pinMutation.isPending,
     deleteChat: deleteMutation.mutate,
-    isDeleting: deleteMutation.isPending,
+    isDeleting: deleteMutation.isPending || isNavigatingAfterDelete,
+
+    // Navigation state
+    isNavigatingAfterDelete,
 
     // Refetch function
     refetch: () => queryClient.invalidateQueries({ queryKey: chatKeys.lists() }),

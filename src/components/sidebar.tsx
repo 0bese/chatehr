@@ -20,6 +20,7 @@ import {
 } from "./ui/alert-dialog";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useChatCreation } from "@/hooks/useChatCreation";
+import { useCurrentChatStateSafe } from "@/components/ChatStateContext";
 
 type SidebarProps = {
   collapsed: boolean;
@@ -34,12 +35,14 @@ const ChatItem = React.memo(
     chat,
     isActive,
     isDeleting,
+    isNavigating,
     onPin,
     onDelete,
   }: {
     chat: any; // Will be typed from useChatHistory
     isActive: boolean;
     isDeleting: boolean;
+    isNavigating?: boolean;
     onPin: (id: string) => void;
     onDelete: (id: string) => void;
   }) => (
@@ -49,7 +52,8 @@ const ChatItem = React.memo(
         isActive
           ? "bg-primary/10 border-l-2 border-primary"
           : "hover:bg-gray-200 dark:hover:bg-[#2F2F31]",
-        isDeleting && "opacity-50 pointer-events-none"
+        isDeleting && "opacity-50 pointer-events-none",
+        isNavigating && "opacity-75"
       )}
     >
       <Link
@@ -134,10 +138,20 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
     isPinning,
     deleteChat,
     isDeleting,
-  } = useChatHistory();
+    isNavigatingAfterDelete,
+  } = useChatHistory(currentChatId);
 
   // Use React Query for chat creation
   const { mutate: createChat, isPending: isCreatingChat } = useChatCreation();
+
+  // Get current chat state (optional - may not be available on all pages)
+  const { messageCount } = useCurrentChatStateSafe();
+
+  // Check if current chat has messages
+  const currentChatHasMessages = currentChatId ? messageCount > 0 : true; // Default to true if no current chat
+
+  // Disable new chat button if we're on a new chat or current chat has no messages
+  const isNewChatDisabled = !currentChatId ? false : (currentChatId === 'new' || !currentChatHasMessages);
 
   /* -------------------------------------------------------------- */
   /* memoised derived data – new array only when chats changes */
@@ -186,9 +200,10 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
       >
         <Button
           onClick={() => createChat("New chat")}
-          disabled={isCreatingChat}
+          disabled={isCreatingChat || isNewChatDisabled}
           variant="ghost"
-          className="w-full justify-start flex items-center gap-2 p-2 hover:bg-gray-200 dark:hover:bg-[#2F2F31] rounded-md transition-colors h-auto font-normal"
+          className="w-full justify-start flex items-center gap-2 p-2 hover:bg-gray-200 dark:hover:bg-[#2F2F31] rounded-md transition-colors h-auto font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isNewChatDisabled ? "Cannot create new chat: current chat has no messages" : "Create new chat"}
         >
           {isCreatingChat ? (
             <>
@@ -268,8 +283,9 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
                     >
                       <ChatItem
                         chat={chat}
-                        isActive={currentChatId === chat.id}
+                        isActive={currentChatId === chat.id || (currentChatId === 'new' && index === 0 && pinned.length === 0)}
                         isDeleting={isDeleting}
+                        isNavigating={isNavigatingAfterDelete}
                         onPin={pinChat}
                         onDelete={deleteChat}
                       />
@@ -296,8 +312,9 @@ export function Sidebar({ collapsed, currentChatId }: SidebarProps) {
                   >
                     <ChatItem
                       chat={chat}
-                      isActive={currentChatId === chat.id}
+                      isActive={currentChatId === chat.id || (currentChatId === 'new' && index === 0 && unpinned.length > 0 && pinned.length === 0)}
                       isDeleting={isDeleting}
+                      isNavigating={isNavigatingAfterDelete}
                       onPin={pinChat}
                       onDelete={deleteChat}
                     />
