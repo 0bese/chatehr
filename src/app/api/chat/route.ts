@@ -7,7 +7,6 @@ import {
   tool,
   TypeValidationError,
 } from "ai";
-import { google } from "@ai-sdk/google";
 import {
   createChat,
   loadChat,
@@ -15,11 +14,16 @@ import {
   verifyChatAccess,
 } from "@/lib/actions/chat";
 import { getCurrentUser } from "@/lib/auth";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+
+const gateway = createOpenAICompatible({
+  name: "moonshotAI",
+  apiKey: process.env.KIMIK2,
+  baseURL: "https://api.moonshot.ai/v1",
+});
 
 import { NextRequest } from "next/server";
 import z from "zod";
-import { MultiServerMCPClient } from "@langchain/mcp-adapters";
-import { convertMCPToolToAiTool } from "@/lib/utils";
 import { findRelevantContent } from "@/lib/ai/embedding";
 import { getMCPTools } from "@/lib/mcp/mcpClient";
 export const maxDuration = 30;
@@ -30,11 +34,12 @@ export async function POST(req: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  console.log("user: ", user);
+
   try {
     const a = await req.json();
     const message = a.message;
     let chatId = a.id;
-    console.log(chatId);
 
     // Verify the chat exists and belongs to this practitioner
     const chatExists = await verifyChatAccess({
@@ -98,22 +103,8 @@ export async function POST(req: NextRequest) {
       ...mcpTools,
     };
 
-    console.log("model message: ", JSON.stringify(modelMessages, null, 2));
-
-    // console.log("ALL TOOLS", allTools);
-
-    // // Log tool availability for debugging (simplified)
-    // console.log(`Available tools: ${Object.keys(allTools).join(", ")}`);
-    // if (Object.keys(mcpTools).length > 0) {
-    //   console.log(
-    //     `MCP tools loaded for practitioner: ${user.practitionerId}`
-    //   );
-    // } else {
-    //   console.log("No MCP tools available, using base tools only");
-    // }
-
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: gateway("kimi-k2-0905-preview"),
       messages: modelMessages,
       tools: allTools,
       stopWhen: stepCountIs(10),
@@ -121,14 +112,7 @@ export async function POST(req: NextRequest) {
         delayInMs: 20, // optional: defaults to 10ms
         chunking: "word", // optional: defaults to 'word'
       }),
-      providerOptions: {
-        google: {
-          thinkingConfig: {
-            thinkingBudget: 8192,
-            includeThoughts: true,
-          },
-        },
-      },
+      providerOptions: {},
       // Add system prompt to reinforce context usage
       system: `You are a helpful medical assistant with access to FHIR tools and user context. You have been provided with user authentication details and current context in the messages. When answering questions:
 
@@ -147,7 +131,9 @@ export async function POST(req: NextRequest) {
       - FHIR Base URL: ${user.fhirBaseUrl}
       - Authentication Token: Available
 
-      Use the context provided in the system message and user message content when calling tools.`,
+      Use the context provided in the system message and user message content when calling tools.
+      NO SUGGESTIONS, USE INFORMATION FROM TOOLS ONLY.  DO NOT INCLUDE SSN AND OTHER PERSONAL INFO ABOUT A PATIENT
+      `,
     });
     return result.toUIMessageStreamResponse({
       generateMessageId: createIdGenerator({
