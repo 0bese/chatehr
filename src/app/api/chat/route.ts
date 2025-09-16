@@ -73,82 +73,7 @@ export async function POST(req: NextRequest) {
       practitionerId: user.practitionerId,
     });
 
-    // Create a system message with user context
-    const userContextMessage = {
-      role: "system",
-      content: `SYSTEM CONTEXT: You are operating with authenticated user context.\n\nUSER AUTHENTICATION DETAILS:\n- Practitioner ID: ${
-        user.practitionerId
-      }\n- Practitioner Name: ${
-        user.practitionerName || "Not specified"
-      }\n- Patient ID: ${user.patientId || "None selected"}\n- Patient Name: ${
-        user.patientName || "None selected"
-      }\n- FHIR Server: ${
-        user.fhirBaseUrl
-      }\n- Authentication: Bearer token available\n\nIMPORTANT INSTRUCTIONS:\n1. You have full access to FHIR tools with authentication\n2. DO NOT ask the user for patient IDs, practitioner IDs, or FHIR server URLs\n3. Use the provided context automatically when calling tools\n4. The user context is available in message._userContext for all tools\n5. You can search for patients, access observations, and perform FHIR operations\n6. Always use the authenticated context - never ask for credentials\n\nWhen the user asks about patients, medical data, or FHIR operations, use the available tools immediately without requesting additional information.`,
-      parts: [
-        {
-          type: "text",
-          text: `SYSTEM CONTEXT: You are operating with authenticated user context.\n\nUSER AUTHENTICATION DETAILS:\n- Practitioner ID: ${
-            user.practitionerId
-          }\n- Practitioner Name: ${
-            user.practitionerName || "Not specified"
-          }\n- Patient ID: ${
-            user.patientId || "None selected"
-          }\n- Patient Name: ${
-            user.patientName || "None selected"
-          }\n- FHIR Server: ${
-            user.fhirBaseUrl
-          }\n- Authentication: Bearer token available\n\nIMPORTANT INSTRUCTIONS:\n1. You have full access to FHIR tools with authentication\n2. DO NOT ask the user for patient IDs, practitioner IDs, or FHIR server URLs\n3. Use the provided context automatically when calling tools\n4. The user context is available in message._userContext for all tools\n5. You can search for patients, access observations, and perform FHIR operations\n6. Always use the authenticated context - never ask for credentials\n\nWhen the user asks about patients, medical data, or FHIR operations, use the available tools immediately without requesting additional information.`,
-        },
-      ],
-      _userContext: {
-        practitionerId: user.practitionerId,
-        practitionerName: user.practitionerName,
-        patientId: user.patientId,
-        patientName: user.patientName,
-        fhirBaseUrl: user.fhirBaseUrl,
-        accessToken: user.accessToken,
-      },
-    };
-
-    // Append user context to the message content as a string
-    const userContextString = `\n\n[USER CONTEXT - Available for tool access]\n- Practitioner ID: ${
-      user.practitionerId
-    }\n- Practitioner Name: ${
-      user.practitionerName || "Not specified"
-    }\n- Patient ID: ${user.patientId || "None selected"}\n- Patient Name: ${
-      user.patientName || "None selected"
-    }\n- FHIR Server: ${
-      user.fhirBaseUrl
-    }\n- Authentication: Bearer token available`;
-
-    // Append new message with user context injection
-    const enhancedMessage = {
-      ...message,
-      content: (message.content || "") + userContextString,
-      parts: [
-        ...(message.parts || []),
-        {
-          type: "text",
-          text: userContextString,
-        },
-      ],
-      _userContext: {
-        practitionerId: user.practitionerId,
-        practitionerName: user.practitionerName,
-        patientId: user.patientId,
-        patientName: user.patientName,
-        fhirBaseUrl: user.fhirBaseUrl,
-        accessToken: user.accessToken,
-      },
-    };
-
-    // Include the system message with user context
-    const messages = [
-      ...previousMessages,
-      userContextMessage,
-      enhancedMessage,
-    ].filter(Boolean);
+    const messages = [...previousMessages, message].filter(Boolean);
 
     // Validate messages
     const modelMessages = convertToModelMessages(messages);
@@ -173,17 +98,19 @@ export async function POST(req: NextRequest) {
       ...mcpTools,
     };
 
-    console.log("ALL TOOLS", allTools);
+    console.log("model message: ", JSON.stringify(modelMessages, null, 2));
 
-    // Log tool availability for debugging (simplified)
-    console.log(`Available tools: ${Object.keys(allTools).join(", ")}`);
-    if (Object.keys(mcpTools).length > 0) {
-      console.log(
-        `MCP tools loaded for practitioner: ${user.practitionerId}`
-      );
-    } else {
-      console.log("No MCP tools available, using base tools only");
-    }
+    // console.log("ALL TOOLS", allTools);
+
+    // // Log tool availability for debugging (simplified)
+    // console.log(`Available tools: ${Object.keys(allTools).join(", ")}`);
+    // if (Object.keys(mcpTools).length > 0) {
+    //   console.log(
+    //     `MCP tools loaded for practitioner: ${user.practitionerId}`
+    //   );
+    // } else {
+    //   console.log("No MCP tools available, using base tools only");
+    // }
 
     const result = streamText({
       model: google("gemini-2.5-flash"),
@@ -265,9 +192,7 @@ export async function GET(req: NextRequest) {
   if (action === "mcp-status") {
     // Return MCP status with user context info
     try {
-      const { getMCPTools } = await import(
-        "@/lib/mcp/mcpClient"
-      );
+      const { getMCPTools } = await import("@/lib/mcp/mcpClient");
       const mcpTools = await getMCPTools();
 
       const toolList = Object.keys(mcpTools);
@@ -318,7 +243,6 @@ export async function GET(req: NextRequest) {
   }
 
   const chatId = searchParams.get("chatId");
-  console.log("chat id :", chatId);
 
   if (!chatId) {
     return new Response("chatId is required", { status: 400 });
