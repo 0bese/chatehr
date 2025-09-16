@@ -112,7 +112,11 @@ export async function POST(req: NextRequest) {
         delayInMs: 20, // optional: defaults to 10ms
         chunking: "word", // optional: defaults to 'word'
       }),
-      providerOptions: {},
+      providerOptions: {
+        openai: {
+          reasoningEffort: "medium",
+        },
+      },
       // Add system prompt to reinforce context usage
       system: `You are a helpful medical assistant with access to FHIR tools and user context. You have been provided with user authentication details and current context in the messages. When answering questions:
 
