@@ -2,6 +2,10 @@
 
 **ChatEHR** is an advanced, context-aware chat application designed for healthcare professionals. It serves as an intelligent assistant that integrates directly with Electronic Health Record (EHR) systems using the SMART on FHIR protocol. The application allows practitioners to conversationally query patient data, and it leverages a Retrieval-Augmented Generation (RAG) system powered by a vector database to answer questions based on a custom, user-uploaded knowledge base.
 
+## Demo
+
+[![ChatEHR Demo Video](https://img.youtube.com/vi/5j-MGm0cysg/maxresdefault.jpg)](https://youtu.be/5j-MGm0cysg)
+
 ## Features
 
 - **Conversational EHR Interaction:** Talk to your EHR system in natural language (e.g., "What are the active conditions for this patient?").
